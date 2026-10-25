@@ -58,7 +58,7 @@
 #               the folder made of hard links; --runtime names the type-2 runtime file it embeds, so the build
 #               fetches nothing.  The AppImage mounts through the host's FUSE (fusermount3), or runs from
 #               --appimage-extract-and-run where there is none
-# Needs docker (the user in its group), python3, rsync, and GNU tar with zstd for the archive.
+# Needs docker (the user in its group), curl, unzip, python3, rsync, and GNU tar with zstd for the archive.
 # Exit status: 0 made and checked; 1 refused or failed (the partial folder is removed).
 
 set -u
@@ -106,6 +106,13 @@ in_sdk() {	# in_sdk <command>: runs a shell command inside the SDK as this user
 }
 ARCH="$(in_sdk "uname -m")" || fail "cannot run $IMAGE"
 case "$ARCH" in x86_64|aarch64) ;; *) fail "$IMAGE is $ARCH: only x86_64 and aarch64 are built";; esac
+
+# The regular POSIX build does this before CMake; portable/package builds need the same sources.
+if [ "$DOBUILD" -eq 1 ]; then
+	vendor_args=()
+	[ "$ART" -eq 1 ] || vendor_args+=(--no-art)
+	bash "$CODE/Tools/vendor.sh" "${vendor_args[@]}" || fail "fetching the third-party sources failed"
+fi
 
 # ---- the build ---------------------------------------------------------------------------------------------
 if [ "$DOBUILD" -eq 1 ]; then
