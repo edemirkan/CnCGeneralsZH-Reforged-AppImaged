@@ -1,0 +1,155 @@
+name: Linux x86_64 AppImage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  appimage:
+    runs-on: ubuntu-24.04
+    env:
+      ZH_PACKAGE_MAINTAINER: "GitHub Actions <actions@github.com>"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            cmake ninja-build g++ git curl unzip xz-utils make pkg-config python3 \
+            libx11-dev libxext-dev libxcursor-dev libxi-dev libxfixes-dev libxrandr-dev \
+            libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev wayland-protocols \
+            libegl-dev libdrm-dev libgbm-dev libvulkan-dev libfontconfig-dev lld unifdef \
+            rsync zstd
+          docker info
+
+      - name: Download packaging tools
+        run: |
+          cmake_version=3.31.6
+          cmake_archive="$RUNNER_TEMP/cmake-$cmake_version-linux-x86_64.tar.gz"
+          curl -fsSL "https://github.com/Kitware/CMake/releases/download/v$cmake_version/cmake-$cmake_version-linux-x86_64.tar.gz" -o "$cmake_archive"
+          tar -xzf "$cmake_archive" -C "$RUNNER_TEMP"
+          echo "CMAKE_PATH=$RUNNER_TEMP/cmake-$cmake_version-linux-x86_64/bin/cmake" >> "$GITHUB_ENV"
+
+          appimagetool="$RUNNER_TEMP/appimagetool-x86_64.AppImage"
+          curl -fsSL https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -o "$appimagetool"
+          chmod +x "$appimagetool"
+          (cd "$RUNNER_TEMP" && "$appimagetool" --appimage-extract)
+          echo "APPIMAGETOOL_PATH=$RUNNER_TEMP/squashfs-root/AppRun" >> "$GITHUB_ENV"
+
+          curl -fsSL https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64 -o "$RUNNER_TEMP/runtime-x86_64"
+          echo "APPIMAGE_RUNTIME_PATH=$RUNNER_TEMP/runtime-x86_64" >> "$GITHUB_ENV"
+
+      - name: Build AppImage
+        run: |
+          GeneralsMD/Code/Tools/linux-packages.sh \
+            --build build-appimage \
+            --out dist \
+            --cmake "$CMAKE_PATH" \
+            --appimagetool "$APPIMAGETOOL_PATH" \
+            --runtime "$APPIMAGE_RUNTIME_PATH" \
+            --formats appimage
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64-build-logs
+          path: |
+            build-appimage/linux-portable.log
+            build-appimage/CMakeFiles/CMake*.log
+            build-appimage/packages/**/*.log
+          if-no-files-found: warn
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: zero-hour-reforged-linux-x86_64
+          path: |
+            dist/*.AppImage
+            dist/*.tar.zst
+            dist/SHA256SUMS
+          if-no-files-found: error
+
+  publish:
+    if: github.event_name == 'release'
+    needs: appimage
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download AppImage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: zero-hour-reforged-linux-x86_64
+          path: dist
+
+      - name: Attach packages to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            dist/*.AppImage \
+            dist/*.tar.zst \
+            dist/SHA256SUMS \
+            --clobber
+
+  publish-main-prerelease:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: appimage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: main-prerelease
+      cancel-in-progress: false
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Download AppImage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: zero-hour-reforged-linux-x86_64
+          path: dist
+
+      - name: Update rolling main prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=main-latest
+          git tag --force "$tag" "$GITHUB_SHA"
+          git push --force origin "refs/tags/$tag"
+
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Latest main build" \
+              --notes "Automatically built from the upstream main branch." \
+              --prerelease
+          else
+            gh release create "$tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Latest main build" \
+              --notes "Automatically built from the upstream main branch." \
+              --prerelease \
+              --verify-tag
+          fi
+
+          gh release upload "$tag" \
+            --repo "$GITHUB_REPOSITORY" \
+            dist/*.AppImage \
+            --clobber
