@@ -15059,6 +15059,13 @@ TEST(pressure_rises_with_the_chance_of_winning_and_falls_back_with_it)
 	// one rifleman against an empty field is not a rout
 	CHECK( aiWinChance( 200.0f, 0.0f ) < 0.65f );
 
+	// no allies on either side is the plain chance, and even teams are the plain even match
+	CHECK_NEAR( aiWinChance( 3000.0f, 9000.0f ), aiSideWinChance( 3000.0f, 0.0f, 9000.0f, 0, 1.0f ), 0.0001f );
+	CHECK_NEAR( 0.5f, aiSideWinChance( 4000.0f, 12000.0f, 4000.0f, 3, 1.0f ), 0.0001f );
+	// seven against one player three times the size of each: not outmatched, though each is alone
+	CHECK_EQ( AIPRESSURE_PRESS, aiPressureLevel( aiSideWinChance( 3000.0f, 18000.0f, 9000.0f, 0, 1.0f ), TRUE, AIPRESSURE_DEFEND ) );
+	CHECK_EQ( AIPRESSURE_DEFEND, aiPressureLevel( aiSideWinChance( 3000.0f, 18000.0f, 9000.0f, 5, 1.0f ), FALSE, AIPRESSURE_NORMAL ) );
+
 	CHECK_EQ( AIPRESSURE_NORMAL, aiPressureLevel( 0.5f, TRUE, AIPRESSURE_NORMAL ) );
 	CHECK_EQ( AIPRESSURE_PRESS, aiPressureLevel( aiWinChance( 9000.0f, 3000.0f ), TRUE, AIPRESSURE_NORMAL ) );
 	CHECK_EQ( AIPRESSURE_DEFEND, aiPressureLevel( aiWinChance( 3000.0f, 9000.0f ), FALSE, AIPRESSURE_NORMAL ) );

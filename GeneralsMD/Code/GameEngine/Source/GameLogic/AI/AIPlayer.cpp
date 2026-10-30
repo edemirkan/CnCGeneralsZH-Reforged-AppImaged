@@ -10313,6 +10313,8 @@ static void addKnownArmy( Object *obj, void *userData )
 	* it, and how much of the way back to an army like its own the belief goes for each look not taken. */
 static const Real KNOWN_ARMY_KEPT = 0.9f;
 static const Real UNSEEN_ARMY_GROWS = 0.02f;
+/** How much of an ally's army, or an enemy ally's, this AI counts on when it rates its chance, by rung. */
+static const Real ALLY_ARMY_SHARE[ AISKILL_COUNT ] = { 0.5f, 0.75f, 1.0f };
 
 /** How often the guards at home are sent hunting once the enemy is finished.  Not every wave tick: a
 	* guard whose script puts it straight back on guard would be sent again every two seconds. */
@@ -10408,7 +10410,12 @@ Bool AIPlayer::leavesToFinish( const Object *obj ) const
 	* had both sides four minutes in at 21,300 against 800 and 14,700 against 1,200, each pressing an
 	* enemy it had seen one corner of, and the waves were never massed again.  Looking at the guessed
 	* start had a USA at (4367,3119) watching an empty start at (4426,1630) beside its own base, its
-	* belief falling a tenth every two seconds, while the GLA it was fighting stood at (460,1679). */
+	* belief falling a tenth every two seconds, while the GLA it was fighting stood at (460,1679).
+	*
+	* It is rated side against side: seven Hard AIs against one player with 180 tanks each weighed its own
+	* army against all of his, and all seven sat at home on defend for fourteen minutes with 230 of their 455
+	* units in their bases. An ally's army counts by the rung's ALLY_ARMY_SHARE, and so does each ally of his,
+	* at what is believed of him, so an even four against four rates as one against one did. */
 //----------------------------------------------------------------------------------------------------------
 void AIPlayer::updatePressure( void )
 {
@@ -10460,7 +10467,21 @@ void AIPlayer::updatePressure( void )
 		rememberedArmy( &theirArmy );
 		myPower *= (Real)sqrt( armyAdvantage( myArmy, theirArmy ) );
 	}
-	const Real chance = aiWinChance( myPower, m_knownEnemyPower );
+	KnownArmy allies = { -1, 0.0f, 0, 0.0f, 0.0f };
+	Int enemyAllies = 0;
+	for( Int i = 0; i < ThePlayerList->getPlayerCount(); ++i )
+	{
+		Player *other = ThePlayerList->getNthPlayer( i );
+		if( other == m_player || other == enemy )
+			continue;
+		const Team *otherTeam = other->getDefaultTeam();
+		if( m_player->getRelationship( otherTeam ) == ALLIES && other->getRelationship( enemy->getDefaultTeam() ) == ENEMIES )
+			other->iterateObjects( addKnownArmy, &allies );
+		else if( m_player->getRelationship( otherTeam ) == ENEMIES && enemy->getRelationship( otherTeam ) == ALLIES &&
+				other->hasAnyUnits() && other->hasAnyBuildFacility() )
+			++enemyAllies;
+	}
+	const Real chance = aiSideWinChance( myPower, allies.power, m_knownEnemyPower, enemyAllies, ALLY_ARMY_SHARE[ m_skillLevel ] );
 	AIPressure level = aiPressureLevel( chance, baseInSight, m_pressure );
 
 	// the guards stay while anybody else is still in the game to walk into the base they left
@@ -10477,8 +10498,8 @@ void AIPlayer::updatePressure( void )
 	if( level == m_pressure )
 		return;
 	static const char *const names[ AIPRESSURE_COUNT ] = { "defend", "normal", "press", "finish" };
-	DEBUG_LOG(("AI PRESSURE frame %d player %d chance %.2f level %s, %.0f power (%.0f by the units) against %.0f believed\n", TheGameLogic->getFrame(),
-		me, chance, names[ level ], mine.power, myPower, m_knownEnemyPower));
+	DEBUG_LOG(("AI PRESSURE frame %d player %d chance %.2f level %s, %.0f power (%.0f by the units) and %.0f allied against %.0f believed and %d allies\n", TheGameLogic->getFrame(),
+		me, chance, names[ level ], mine.power, myPower, allies.power, m_knownEnemyPower, enemyAllies));
 	m_pressure = level;
 }
 

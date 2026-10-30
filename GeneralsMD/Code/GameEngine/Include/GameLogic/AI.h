@@ -926,6 +926,10 @@ enum AIPressure
 	* have, so one rifleman against nothing is not a rout. */
 Real aiWinChance( Real myPower, Real enemyPower );
 
+/** The same chance, side against side.  An ally's army counts by allyShare, and each ally of the enemy
+	* counts by the same share as an army like his, so even teams rate the way one against one does. */
+Real aiSideWinChance( Real myPower, Real alliedPower, Real enemyPower, Int enemyAllies, Real allyShare );
+
 /** The level that chance asks for.  A level is left later than it is entered, so a chance sitting on
 	* a threshold does not change the orders every two seconds: a Hard AI watching an army walk in and
 	* out of its sight changed level six times in a minute on a chance between 0.58 and 0.66.  PRESS and

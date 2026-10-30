@@ -2248,6 +2248,12 @@ Real aiWinChance( Real myPower, Real enemyPower )
 }
 
 //-------------------------------------------------------------------------------------------------
+Real aiSideWinChance( Real myPower, Real alliedPower, Real enemyPower, Int enemyAllies, Real allyShare )
+{
+	return aiWinChance( myPower + alliedPower * allyShare, enemyPower * (1.0f + INT_TO_REAL( enemyAllies ) * allyShare) );
+}
+
+//-------------------------------------------------------------------------------------------------
 AIPressure aiPressureLevel( Real chance, Bool enemyBaseInSight, AIPressure current )
 {
 	const Real FINISH_AT = 0.85f;
