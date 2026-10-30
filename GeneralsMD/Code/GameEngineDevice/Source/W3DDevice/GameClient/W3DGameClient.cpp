@@ -53,6 +53,8 @@
 #include "GameClient/RayEffect.h"
 #include "GameLogic/GameLogic.h"
 #include "GameLogic/Object.h"
+#include "GameClient/View.h"
+#include "WW3D2/dx11runtime.h"
 #include "W3DDevice/GameClient/W3DAssetManager.h"
 #include "W3DDevice/GameClient/W3DGameClient.h"
 #include "W3DDevice/GameClient/W3DStatusCircle.h"
@@ -176,6 +178,12 @@ void W3DGameClient::structureFell(const Coord3D *pos, Real radius)
 		return;
 	addGroundMark(pos, radius * 1.1f, GroundMarks::STAIN);
 	addGroundMark(pos, radius * 0.8f, GroundMarks::CRACKS);
+
+	// a big one jolts the camera on top of what its FX shakes, a step under a nuke's kick; a barracks or
+	// a tower does not.  Not under Classic or Direct3D 9, which keep the old shake.
+	const Real JOLT_FROM_RADIUS = 40.0f;
+	if (radius >= JOLT_FROM_RADIUS && TheTacticalView && !TheGlobalData->m_classicGraphics && Direct3D11_Present_Is_Enabled())
+		TheTacticalView->shake(pos, View::SHAKE_STRONG);
 }
 
 //-------------------------------------------------------------------------------------------------

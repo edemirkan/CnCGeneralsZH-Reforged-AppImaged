@@ -68,6 +68,7 @@ OPTION_BOOL_ACCESSORS( m_nudgeBuildPlacement )
 OPTION_BOOL_ACCESSORS( m_zoomToCursor )
 OPTION_INT_ACCESSORS( m_zoomSpeed )
 OPTION_BOOL_ACCESSORS( m_isometricCamera )
+OPTION_BOOL_ACCESSORS( m_cameraShake )
 OPTION_BOOL_ACCESSORS( m_startAtMaxZoom )
 
 // This catalog loads before there is a mouse, so the value waits in GlobalData and Mouse::parseIni
@@ -311,6 +312,12 @@ const OptionDef TheOptionCatalog[] =
 	{ "IsometricCamera",					OPT_WND( "CheckIsometricCamera" ), "GUI:IsometricCamera",
 		OPTION_BOOL, APPLY_LIVE, 0, 1,
 		get_m_isometricCamera, set_m_isometricCamera },
+
+	// Whether blasts and scripts may shake the view; W3DView asks at each shake, and one under way
+	// settles by itself.  On Options > Controls.  It costs no frame time, so no quality row.
+	{ "CameraShake",							OPT_WND( "CheckCameraShake" ), "GUI:CameraShake",
+		OPTION_BOOL, APPLY_LIVE, 0, 1,
+		get_m_cameraShake, set_m_cameraShake },
 
 	// A match opens as far out as the wheel goes, or 300 over the ground (View::setZoomToStart).
 	// Read when the map loads, so it counts from the next match.  On Options > Controls in both

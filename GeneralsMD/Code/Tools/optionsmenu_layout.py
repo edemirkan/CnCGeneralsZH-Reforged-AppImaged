@@ -189,6 +189,7 @@ NEW_CONTROLS = [
     (CHECK,  "CheckEmptyBuildingPips", "GUI:EmptyBuildingPips"),
     (CHECK,  "CheckZoomToCursor",      "GUI:ZoomToCursor"),
     (CHECK,  "CheckIsometricCamera",   "GUI:IsometricCamera"),
+    (CHECK,  "CheckCameraShake",       "GUI:CameraShake"),
     (CHECK,  "CheckStartAtMaxZoom",    "GUI:StartAtMaxZoom"),
     (CHECK,  "CheckSnapCamera45",      "GUI:SnapCamera45"),
     (CHECK,  "CheckGridBuild",         "GUI:GridBuild"),
@@ -411,7 +412,8 @@ GROUP_LAYOUT = [
             ("check", "CheckZoomToCursor"),
             ("check", "CheckStartAtMaxZoom"),
             ("check", "CheckSnapCamera45"),
-            ("check", "CheckEdgeScrollWindowed")]),
+            ("check", "CheckEdgeScrollWindowed"),
+            ("check", "CheckCameraShake")]),
         ("GUI:OptionsGroupOrders", [
             setting("LabelDragTolerance", "SliderDragTolerance", "ValueDragTolerance"),
             ("check", "CheckAlternateMouse"),

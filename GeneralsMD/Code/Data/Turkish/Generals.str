@@ -15177,6 +15177,14 @@ TOOLTIP:LegacySound
 "Özgün oyunun sesi: geçen seslerde perde kayması yok, Aurora'nın ses patlaması yok, savaş seslerine ve birlik cevaplarına sınır yok, sınırlayıcı yok, harita ambiyansı yok, müzik de çatışmayı izlemez. Ana ses, cihaz ve hoparlörler yine geçerlidir. Hemen etkili olur."
 END
 
+GUI:CameraShake
+"Kamera Sarsıntısı"
+END
+
+TOOLTIP:CameraShake
+"Patlamalar kamerayı sarsar. Yakında bir nükleer patlama ya da büyük bir binanın yıkılması onu bir an sertçe iter. Görüntünün sabit kalması için işareti kaldır. Kabul Et'e basınca uygulanır."
+END
+
 GUI:IsometricCamera
 "İzometrik Kamera"
 END

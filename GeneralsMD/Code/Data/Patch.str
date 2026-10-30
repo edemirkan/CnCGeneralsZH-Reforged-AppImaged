@@ -693,6 +693,14 @@ TOOLTIP:LegacySound
 "The original game's sound: no pitch bend on passing sounds, no Aurora sonic boom, no cap on battle sounds or unit replies, no limiter, no map ambience and no music following the fight. Master volume, the device and the speakers still apply. Takes effect at once."
 END
 
+GUI:CameraShake
+"Camera Shake"
+END
+
+TOOLTIP:CameraShake
+"Blasts shake the camera. A nuke or a big building coming down nearby kicks it hard for a moment. Untick to keep the view still. Applies when you press Accept."
+END
+
 GUI:IsometricCamera
 "Isometric Camera"
 END
