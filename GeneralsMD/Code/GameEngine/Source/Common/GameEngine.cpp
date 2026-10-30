@@ -3198,6 +3198,12 @@ void GameEngine::update( void )
 				 plus the render is a dropped frame nobody files a bug about. */
 			Int64 tCatchupStart, tCatchupNow;
 			tCatchupStart = Clock_Ticks();
+			/* The tick beside the render spends the budget like one run here.  Left out, a match behind
+				 its clock ran one more tick a pass at 1 than at 0, all of them in series after the picture:
+				 3.3 against 2.3 ticks, a frame 3 ms longer on average and 5 ms at p99.9. */
+			Real tickBesideRenderMS = 0.0f, waitForTickMS = 0.0f;
+			if (overlapped)
+				LogicThread::takeOverlapTimes( tickBesideRenderMS, waitForTickMS );
 			const UnsignedInt frameBeforeTicks = overlapped ? s_frameBeforeOverlap : TheGameLogic->getFrame();
 			for( ;; )
 			{
@@ -3221,7 +3227,7 @@ void GameEngine::update( void )
 					break;
 				tCatchupNow = Clock_Ticks();
 				if (!GameEngine_mayStartAnotherCatchupTick( logicTicksThisPass, maxTicksThisPass,
-																									 engineElapsedMS( tCatchupStart, tCatchupNow ) ))
+																									 tickBesideRenderMS + engineElapsedMS( tCatchupStart, tCatchupNow ) ))
 					break;
 				if (networkPaced)
 				{
@@ -3268,11 +3274,8 @@ void GameEngine::update( void )
 			// One pass can pay off several ticks of debt; charge the histogram per tick, or a
 			// catch-up burst reads as one enormous logic frame that never actually happened.  The tick
 			// beside the render is charged at its own length, the pass at the wait for it.
-			Real overlapTickMS = 0.0f, overlapWaitMS = 0.0f;
-			if (overlapped)
-				LogicThread::takeOverlapTimes( overlapTickMS, overlapWaitMS );
-			GameEngine_noteLogicTime( ( logicMS + overlapTickMS ) / (Real)logicTicksThisPass, TheGameLogic->getFrame() );
-			logicMS += overlapWaitMS;
+			GameEngine_noteLogicTime( ( logicMS + tickBesideRenderMS ) / (Real)logicTicksThisPass, TheGameLogic->getFrame() );
+			logicMS += waitForTickMS;
 #endif
 		}
 
