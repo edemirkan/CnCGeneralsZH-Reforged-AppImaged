@@ -1779,6 +1779,7 @@ GameEngineDevice/Include/W3DDevice/Common/W3DModuleFactory.h
 GameEngineDevice/Include/W3DDevice/Common/W3DRadar.h
 GameEngineDevice/Include/W3DDevice/Common/W3DThingFactory.h
 GameEngineDevice/Include/W3DDevice/GameClient/BaseHeightMap.h
+GameEngineDevice/Include/W3DDevice/GameClient/FireLights.h
 GameEngineDevice/Include/W3DDevice/GameClient/FlatHeightMap.h
 GameEngineDevice/Include/W3DDevice/GameClient/GpuParticles.h
 GameEngineDevice/Include/W3DDevice/GameClient/GroundMarks.h
@@ -3213,6 +3214,7 @@ Tests/test_ffvertex.cpp
 Tests/test_ffvertexcompile.cpp
 Tests/test_ffvertexd3d9.cpp
 Tests/test_fingerprint_manifest.sh
+Tests/test_fire_lights.cpp
 Tests/test_first_launch_chooser.sh
 Tests/test_fontchars.cpp
 Tests/test_fpucontrol.cpp

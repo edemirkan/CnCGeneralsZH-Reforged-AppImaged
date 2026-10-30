@@ -1508,6 +1508,14 @@ TOOLTIP:GroundMarks
 "Shells and missiles leave burns on the ground, a fallen building leaves a dark stain with cracks in it, a nuke leaves a burnt ring, and tank treads stay dark for longer. They fade over about four minutes. Direct3D 11 only, and off under Classic Graphics. Applies when you press Accept."
 END
 
+GUI:Firelight
+"Firelight"
+END
+
+TOOLTIP:Firelight
+"Burning buildings, wrecks and explosions throw a flickering orange light on the ground, the walls and the units around them. It shows most on night maps. Direct3D 11 only, and off under Classic Graphics. Applies when you press Accept."
+END
+
 GUI:FormationDrag
 "Drag Out A Formation"
 END

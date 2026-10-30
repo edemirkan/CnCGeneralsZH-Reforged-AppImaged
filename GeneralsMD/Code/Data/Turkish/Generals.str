@@ -15901,6 +15901,14 @@ TOOLTIP:GroundMarks
 "Mermiler ve füzeler yerde yanık bırakır, yıkılan bina çatlaklarla dolu koyu bir leke bırakır, nükleer patlama yanık bir halka bırakır, tank paletlerinin izi daha uzun süre koyu kalır. Yaklaşık dört dakikada silinirler. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
 END
 
+GUI:Firelight
+"Ateş Işığı"
+END
+
+TOOLTIP:Firelight
+"Yanan binalar, enkazlar ve patlamalar çevrelerindeki zemine, duvarlara ve birimlere titreyen turuncu bir ışık vurur. En çok gece haritalarında belli olur. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
+END
+
 GUI:FormationDrag
 "Sürükleyerek Düzen Kur"
 END

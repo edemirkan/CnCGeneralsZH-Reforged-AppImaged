@@ -55,6 +55,8 @@
 #include "W3DDevice/GameClient/HeightMap.h"
 #include "W3DDevice/GameClient/W3DScene.h"
 #include "W3DDevice/GameClient/W3DDynamicLight.h"
+#include "W3DDevice/GameClient/W3DParticleSys.h"
+#include "W3DDevice/GameClient/FireLights.h"
 #include "W3DDevice/GameClient/W3DGranny.h"
 #include "W3DDevice/GameClient/W3DShadow.h"
 #include "W3DDevice/GameClient/W3DVolumetricShadow.h"
@@ -1400,6 +1402,20 @@ static void handBlastLights(RefRenderObjListClass &dynamicLights, const Vector3 
 
 	static float lights[BLAST_LIGHT_SLOTS][BLAST_LIGHT_FLOATS];
 	unsigned count = 0;
+	// The Firelight option's fires come first, so a barrage's muzzle flashes cannot take a burning base
+	// off the ground for a frame and give it back the next; FireLights::MAX_LIGHTS leaves the pulses the rest.
+	Int fireCount;
+	const FireLights::Light *fires = getFirelights(&fireCount);
+	for (Int i = 0; i < fireCount; ++i)
+	{
+		const FireLights::Light &fire = fires[i];
+		float *slot = lights[count++];
+		slot[0] = fire.x; slot[1] = fire.y; slot[2] = fire.z; slot[3] = fire.reach;
+		slot[4] = fire.red / base[0]; slot[5] = fire.green / base[1]; slot[6] = fire.blue / base[2];
+		slot[7] = fire.inner;
+		slot[8] = slot[4] * FireLights::AMBIENT_SHARE; slot[9] = slot[5] * FireLights::AMBIENT_SHARE; slot[10] = slot[6] * FireLights::AMBIENT_SHARE;
+		slot[11] = 0.0f;
+	}
 	for (size_t i = 0; i < nearest.size() && count < BLAST_LIGHT_SLOTS; ++i)
 	{
 		W3DDynamicLight *light = nearest[i].second;

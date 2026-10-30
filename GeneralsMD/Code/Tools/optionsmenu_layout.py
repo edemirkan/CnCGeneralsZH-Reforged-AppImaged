@@ -239,6 +239,7 @@ NEW_CONTROLS = [
     (CHECK,  "CheckTeamGlow",          "GUI:TeamGlow"),
     (CHECK,  "CheckWaterFoam",         "GUI:WaterFoam"),
     (CHECK,  "CheckGroundMarks",       "GUI:GroundMarks"),
+    (CHECK,  "CheckFirelight",         "GUI:Firelight"),
     (LABEL,  "LabelGraphicsQuality",   "GUI:GraphicsQuality"),
     (SLIDER, "SliderGraphicsQuality",  None),
 ]
@@ -387,6 +388,7 @@ GROUP_LAYOUT = [
             setting("LabelSmoke", "ComboBoxSmoke"),
             ("check", "CheckParticleBounce"),
             ("check", "CheckSmokeFireLighting"),
+            ("check", "CheckFirelight"),
             ("check", "CheckDebrisTrails")])]),
 
     ("PageAudio", [

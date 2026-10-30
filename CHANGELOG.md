@@ -8,6 +8,10 @@ found and fixed, EA's own, not port damage.**
 
 ---
 
+## Fires light what stands around them
+
+- Firelight, under Options, Effects, is a new setting, off by default until it has been played. A burning building, a wreck or a blast throws a flickering orange light on the ground around it, where before only the one-off flash of an explosion lit anything and a town could burn all night over unlit paving. On Dark Night the moonlit ground beside a fire goes from cold blue-grey to warm tan. Twelve fires at most are lit at once, the strongest in view, and with all twelve going in a battle of three armies and three superweapons they add about a millisecond to a frame already at 18. The Direct3D 9 picture and Classic Graphics keep the old light.
+
 ## The ground remembers the fight
 
 - Battle Marks, under Options, Effects, is a new setting, off by default until it has been looked at on more maps. Tank shells and missiles landing on open ground leave a burn, where only fifty of the game's 431 effects ever marked the ground and a tank shell was not one of them. A building that falls leaves a dark stain with cracks in it. A nuke, a MOAB or a Daisy Cutter burns a ring of scorched earth round its crater, and a tank's track stays dark for three quarters of its length instead of a quarter.
