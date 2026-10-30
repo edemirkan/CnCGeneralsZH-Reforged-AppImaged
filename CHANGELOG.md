@@ -8,6 +8,11 @@ found and fixed, EA's own, not port damage.**
 
 ---
 
+## The ground remembers the fight
+
+- Battle Marks, under Options, Effects, is a new setting, off by default until it has been looked at on more maps. Tank shells and missiles landing on open ground leave a burn, where only fifty of the game's 431 effects ever marked the ground and a tank shell was not one of them. A building that falls leaves a dark stain with cracks in it. A nuke, a MOAB or a Daisy Cutter burns a ring of scorched earth round its crater, and a tank's track stays dark for three quarters of its length instead of a quarter.
+- Marks hold for a minute and are gone three minutes after that. There are never more than 256, the oldest going first, so a two hour match carries no more than a ten minute one, and a nuke's ring takes room enough that one after another clears the older marks early. A gun firing at one spot renews one mark instead of stacking them into a black disc. A blast in the air or over water leaves nothing, and neither does one you could not see, so a mark never gives away a fight in the fog. The Direct3D 9 picture and Classic Graphics keep the old ground.
+
 ## The ground a defence can hit
 
 - Click one of your defences, or put a new one on the cursor, and the ground it fires on is painted on the terrain in your colour: a quiet wash with a clean line round the end of its reach, lying over the hills and down the slopes, under your units and buildings. Only what you clicked or what you are placing is painted: a base of ten defences no longer floods the ground in colour the moment a dozer picks up a building. Where a cliff, a building or the fog cuts into the ground, the wash fades in softly instead of ending on a line, so you can tell at a glance whether a gap is out of range or out of sight. A faint pulse leaves the line every few seconds and runs inward. The enemy's defences show nothing. This came back after the one-interface change took the old range ring away with the Reforged interface.

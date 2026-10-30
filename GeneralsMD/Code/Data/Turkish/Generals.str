@@ -15885,6 +15885,14 @@ TOOLTIP:WaterFoam
 "Nehirlerde ve göllerde köpük benekleri ve kıyı boyunca bir köpük şeridi belirir, güneşin gölgeleri suya düşer. Denizin dalgaları değişmez. Yalnızca Direct3D 11 ve Klasik su ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
 END
 
+GUI:GroundMarks
+"Savaş İzleri"
+END
+
+TOOLTIP:GroundMarks
+"Mermiler ve füzeler yerde yanık bırakır, yıkılan bina çatlaklarla dolu koyu bir leke bırakır, nükleer patlama yanık bir halka bırakır, tank paletlerinin izi daha uzun süre koyu kalır. Yaklaşık dört dakikada silinirler. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
+END
+
 GUI:FormationDrag
 "Sürükleyerek Düzen Kur"
 END

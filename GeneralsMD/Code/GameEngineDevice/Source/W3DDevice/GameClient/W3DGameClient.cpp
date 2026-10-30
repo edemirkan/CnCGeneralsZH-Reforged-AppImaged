@@ -47,7 +47,9 @@
 #include "Common/GameLOD.h"
 #include "GameClient/Drawable.h"
 #include "GameClient/GameClient.h"
+#include "GameClient/ObserverCamera.h"
 #include "GameClient/ParticleSys.h"
+#include "GameLogic/PartitionManager.h"
 #include "GameClient/RayEffect.h"
 #include "GameLogic/GameLogic.h"
 #include "GameLogic/Object.h"
@@ -56,6 +58,7 @@
 #include "W3DDevice/GameClient/W3DStatusCircle.h"
 #include "W3DDevice/GameClient/W3DScene.h"
 #include "W3DDevice/GameClient/W3DShadow.h"
+#include "W3DDevice/GameClient/GroundMarks.h"
 #include "W3DDevice/GameClient/HeightMap.h"
 #include "WW3D2/part_emt.h"
 #include "WW3D2/hanim.h"
@@ -144,6 +147,35 @@ void W3DGameClient::addScorch(const Coord3D *pos, Real radius, Scorches type)
 		Vector3 loc(pos->x, pos->y, pos->z);
 		TheTerrainRenderObject->addScorch(loc, radius, type);
 	}
+}
+
+//-------------------------------------------------------------------------------------------------
+void W3DGameClient::addGroundMark(const Coord3D *pos, Real radius, Int type)
+{
+	const Coord3D at = *pos;
+	LOGIC_AFTER_TICK( [=]() { addGroundMark( &at, radius, type ); } );
+	if (TheTerrainRenderObject)
+		TheTerrainRenderObject->addGroundMark(Vector3(pos->x, pos->y, pos->z), radius, type);
+}
+
+//-------------------------------------------------------------------------------------------------
+/** A building is down, in cells this screen sees: a soft stain with cracks in it.  Called from the
+	* body's change of state inside logic's pass, and played after it. */
+//-------------------------------------------------------------------------------------------------
+void W3DGameClient::structureFell(const Coord3D *pos, Real radius)
+{
+	const Coord3D at = *pos;
+	LOGIC_AFTER_TICK( [=]() { structureFell( &at, radius ); } );
+	// a landmark bridge counts as a structure at over 1000 units: no round stain fits that
+	const Real MAX_STAINED_RADIUS = 150.0f;
+	// under this the cracks are smaller than a terrain cell's reach and their edge runs into the next art
+	const Real MIN_STAINED_RADIUS = 12.5f;
+	if (radius > MAX_STAINED_RADIUS || radius < MIN_STAINED_RADIUS)
+		return;
+	if (ThePartitionManager->getShroudStatusForPlayer(TheObserverCamera.getShroudPlayerIndex(), pos) != CELLSHROUD_CLEAR)
+		return;
+	addGroundMark(pos, radius * 1.1f, GroundMarks::STAIN);
+	addGroundMark(pos, radius * 0.8f, GroundMarks::CRACKS);
 }
 
 //-------------------------------------------------------------------------------------------------

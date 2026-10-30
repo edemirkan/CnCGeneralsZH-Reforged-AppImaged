@@ -1488,6 +1488,9 @@ void Drawable::reactToBodyDamageStateChange(BodyDamageType newState)
   // correctly react to customizations
   if ( !TheGameLogic->isLoadingMap() )
  	  startAmbientSound(newState, TheGlobalData->m_timeOfDay);
+
+	if (newState == BODY_RUBBLE && !TheGameLogic->isLoadingMap() && getObject() && isKindOf(KINDOF_STRUCTURE) && !isKindOf(KINDOF_BRIDGE))
+		TheGameClient->structureFell(getPosition(), getObject()->getGeometryInfo().getBoundingCircleRadius());
 }
 
 //-------------------------------------------------------------------------------------------------

@@ -1492,6 +1492,14 @@ TOOLTIP:WaterFoam
 "Rivers and lakes carry flecks of foam and a band of it along the shore, and the sun's shadows fall on the water. The sea's waves are unchanged. Direct3D 11 and Classic water only, and off under Classic Graphics. Applies when you press Accept."
 END
 
+GUI:GroundMarks
+"Battle Marks"
+END
+
+TOOLTIP:GroundMarks
+"Shells and missiles leave burns on the ground, a fallen building leaves a dark stain with cracks in it, a nuke leaves a burnt ring, and tank treads stay dark for longer. They fade over about four minutes. Direct3D 11 only, and off under Classic Graphics. Applies when you press Accept."
+END
+
 GUI:FormationDrag
 "Drag Out A Formation"
 END

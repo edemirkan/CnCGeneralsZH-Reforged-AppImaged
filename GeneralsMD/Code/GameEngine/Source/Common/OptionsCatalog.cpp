@@ -141,6 +141,7 @@ OPTION_BOOL_ACCESSORS( m_explosionDebrisTrails )
 OPTION_BOOL_ACCESSORS( m_mapLight )
 OPTION_BOOL_ACCESSORS( m_teamGlow )
 OPTION_BOOL_ACCESSORS( m_waterFoam )
+OPTION_BOOL_ACCESSORS( m_groundMarks )
 OPTION_INT_ACCESSORS( m_shadowQuality )
 OPTION_INT_ACCESSORS( m_graphicsQuality )
 
@@ -603,6 +604,13 @@ const OptionDef TheOptionCatalog[] =
 	{ "WaterFoam",								OPT_WND( "CheckWaterFoam" ), "GUI:WaterFoam",
 		OPTION_BOOL, APPLY_LIVE, 0, 1,
 		get_m_waterFoam, set_m_waterFoam },
+
+	// Craters and a building's stain on the terrain, fading over minutes, and darker treads.  The
+	// scorch buffer asks every draw.  Off under Classic graphics and -d3d9, and no row in the quality
+	// table: an opt-in until it has been seen.  On Options > Effects.
+	{ "GroundMarks",							OPT_WND( "CheckGroundMarks" ), "GUI:GroundMarks",
+		OPTION_BOOL, APPLY_LIVE, 0, 1,
+		get_m_groundMarks, set_m_groundMarks },
 
 	// The size of the sun's depth map.  The shadow pass asks for it every frame and the backend makes
 	// the map again when the size changes, so a new level shows on the next frame.  On Options >

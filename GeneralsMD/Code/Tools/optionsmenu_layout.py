@@ -237,6 +237,7 @@ NEW_CONTROLS = [
     (CHECK,  "CheckMapLight",          "GUI:MapLight"),
     (CHECK,  "CheckTeamGlow",          "GUI:TeamGlow"),
     (CHECK,  "CheckWaterFoam",         "GUI:WaterFoam"),
+    (CHECK,  "CheckGroundMarks",       "GUI:GroundMarks"),
     (LABEL,  "LabelGraphicsQuality",   "GUI:GraphicsQuality"),
     (SLIDER, "SliderGraphicsQuality",  None),
 ]
@@ -376,6 +377,7 @@ GROUP_LAYOUT = [
             ("check", "CheckShowProps"),
             ("check", "CheckSmoothWater"),
             ("check", "CheckWaterFoam"),
+            ("check", "CheckGroundMarks"),
             ("check", "CheckExtraAnimations"),
             ("check", "CheckTreeSway"),
             ("check", "CheckBehindBuilding")]),
