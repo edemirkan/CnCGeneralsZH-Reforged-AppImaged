@@ -2206,6 +2206,7 @@ The whole HUD is on the hardware. Four colours carry it, and they mean the same 
   far behind died on the spot, which is why a mob that walked around a building turned up four men
   short. Each member now has its own place in the crowd and holds it, whoever gets ahead eases off
   rather than arriving alone, whoever falls behind runs, and nobody dies for being last.
+- A mob on the march no longer lurches. Every member flipped between a walk and a run on a threshold, so the crowd surged and sagged every couple of seconds, and a man who got ahead of the leader counted as lost and sprinted further ahead. Now everyone holds the leader's pace and closes a gap gradually, and only a man who has really fallen behind runs. Two mobs marching together spent 15 to 23% of the road at a sprint and now spend none. Three mobs sent at fifteen Rangers used to arrive over 16 seconds, one by one, and now arrive over 7, so over five seeds they killed 44 Rangers where they had killed 38 and left 81 men standing where they had left 23. A mob bigger than twelve also stopped putting two men on one spot. Replays recorded before this change play out differently.
 
 ## Long orders stopped hitching
 
