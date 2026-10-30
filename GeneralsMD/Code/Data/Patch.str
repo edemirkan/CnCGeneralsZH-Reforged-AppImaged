@@ -1516,6 +1516,14 @@ TOOLTIP:Firelight
 "Burning buildings, wrecks and explosions throw a flickering orange light on the ground, the walls and the units around them. It shows most on night maps. Direct3D 11 only, and off under Classic Graphics. Applies when you press Accept."
 END
 
+GUI:HemiAmbient
+"Sky And Ground Light"
+END
+
+TOOLTIP:HemiAmbient
+"Models take the map's ambient light from the sky above and the ground below instead of evenly, so a tank's deck is lighter than its belly. Walls keep the light they had and a night map stays dark. Direct3D 11 only, and off under Classic Graphics. Applies when you press Accept."
+END
+
 GUI:FormationDrag
 "Drag Out A Formation"
 END

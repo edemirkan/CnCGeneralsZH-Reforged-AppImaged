@@ -85,6 +85,7 @@ void Direct3D11_Set_Smoke_Glow(bool) {}
 void Direct3D11_Set_Fire_Look(bool) {}
 void Direct3D11_Set_Emissive(bool) {}
 void Direct3D11_Set_Team_Glow(bool) {}
+void Direct3D11_Set_Hemi_Ambient(bool) {}
 void Direct3D11_Set_Draw_Effect(unsigned, const float [4]) {}
 bool Direct3D11_Draw_Effects() { return false; }
 void Direct3D11_Allow_Draw_Effects(bool) {}

@@ -144,6 +144,7 @@ OPTION_BOOL_ACCESSORS( m_teamGlow )
 OPTION_BOOL_ACCESSORS( m_waterFoam )
 OPTION_BOOL_ACCESSORS( m_groundMarks )
 OPTION_BOOL_ACCESSORS( m_firelight )
+OPTION_BOOL_ACCESSORS( m_hemiAmbient )
 OPTION_INT_ACCESSORS( m_shadowQuality )
 OPTION_INT_ACCESSORS( m_graphicsQuality )
 
@@ -626,6 +627,13 @@ const OptionDef TheOptionCatalog[] =
 	{ "Firelight",								OPT_WND( "CheckFirelight" ), "GUI:Firelight",
 		OPTION_BOOL, APPLY_LIVE, 0, 1,
 		get_m_firelight, set_m_firelight },
+
+	// Models take the map's ambient from the sky above and the ground below instead of evenly.  The
+	// scene hands it to the backend every frame.  Off under Classic graphics and -d3d9, and no row in
+	// the quality table: an opt-in until it has been seen.  On Options > Effects.
+	{ "HemiAmbient",							OPT_WND( "CheckHemiAmbient" ), "GUI:HemiAmbient",
+		OPTION_BOOL, APPLY_LIVE, 0, 1,
+		get_m_hemiAmbient, set_m_hemiAmbient },
 
 	// The size of the sun's depth map.  The shadow pass asks for it every frame and the backend makes
 	// the map again when the size changes, so a new level shows on the next frame.  On Options >

@@ -715,6 +715,13 @@ void Direct3D11_Set_Team_Glow(bool glow)
 	}
 }
 
+void Direct3D11_Set_Hemi_Ambient(bool hemi)
+{
+	if (Active) {
+		Backend.Set_Hemi_Ambient(hemi);
+	}
+}
+
 static bool DrawEffectsAllowed = true;
 
 void Direct3D11_Set_Draw_Effect(unsigned effect, const float parameters[4])

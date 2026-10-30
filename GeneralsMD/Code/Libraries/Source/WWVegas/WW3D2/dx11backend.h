@@ -330,6 +330,10 @@ public:
 	// around such a mesh's draws.  A draw it does not suit takes none (Team_Glow).
 	void Set_Team_Glow(bool glow);
 
+	// The Hemispheric Ambient option: lit draws take the scene ambient from the sky above and the ground
+	// below (ffvertex.h, HemiAmbient).  Off under Classic, whose picture is -d3d9's.
+	void Set_Hemi_Ambient(bool hemi);
+
 	// The look the draws that follow are dressed in (a DRAW_EFFECT_* value, ffshader.h) and its
 	// four numbers: wall clock seconds, strength, a per-object seed and the object's opacity.  The
 	// mesh renderer sets it around one object's draws and puts DRAW_EFFECT_NONE back after them.
@@ -726,6 +730,8 @@ private:
 	// Set_Team_Glow, and whether the current draw takes it.
 	bool TeamGlow;
 	bool Team_Glow() const;
+	// Set_Hemi_Ambient.
+	bool HemiAmbient;
 	// Set_Draw_Effect's look and numbers, and the look the current draw takes after the checks.
 	unsigned DrawEffect;
 	float DrawEffectNumbers[4];

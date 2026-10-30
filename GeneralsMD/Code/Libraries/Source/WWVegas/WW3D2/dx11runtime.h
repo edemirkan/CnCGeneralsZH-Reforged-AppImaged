@@ -238,6 +238,11 @@ void Direct3D11_Set_Emissive(bool emissive);
 // (DX11BackendClass::Set_Team_Glow, the Team Glow option).  The mesh renderer sets it around the mesh.
 void Direct3D11_Set_Team_Glow(bool glow);
 
+// The Hemispheric Ambient option (DX11BackendClass::Set_Hemi_Ambient): lit models take the scene
+// ambient from the sky above and the ground below.  The scene hands it over every frame.  -d3d9,
+// -headless and the SDL3 port keep the flat ambient.
+void Direct3D11_Set_Hemi_Ambient(bool hemi);
+
 // The look one object's draws are dressed in (DRAW_EFFECT_* in ffshader.h) and its four numbers
 // (DX11BackendClass::Set_Draw_Effect).  The mesh renderer sets it around a mesh's draws and puts
 // zero back after them.  -d3d9, -headless and the SDL3 port draw the object as they always did.
