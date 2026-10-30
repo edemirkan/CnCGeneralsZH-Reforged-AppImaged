@@ -98,6 +98,26 @@ void DeployStyleAIUpdate::aiDoCommand( const AICommandParms* parms )
 }
 
 //-------------------------------------------------------------------------------------------------
+/** Setting up takes as long as the data says, and a Nuke Cannon's is 3.3 seconds, then as long again
+	* to pack.  One that unpacked for anything in reach this instant finished just as a Humvee drove out
+	* of reach and packed again without a shot, 6.7 seconds gone.  So it unpacks only for a target still
+	* in reach by the time it is ready, if the target keeps on going the way it is going. */
+//-------------------------------------------------------------------------------------------------
+Bool DeployStyleAIUpdate::willTargetStayInRange( const Weapon *weapon ) const
+{
+	const Object *victim = getCurrentVictim();
+	if( victim == NULL || victim->getPhysics() == NULL )
+		return TRUE;
+
+	const Coord3D *velocity = victim->getPhysics()->getVelocity();
+	const Real frames = (Real)getUnpackTime();
+	Coord3D then = *victim->getPosition();
+	then.x += velocity->x * frames;
+	then.y += velocity->y * frames;
+	return weapon->isWithinAttackRange( getObject(), &then );
+}
+
+//-------------------------------------------------------------------------------------------------
 UpdateSleepTime DeployStyleAIUpdate::update( void )
 {
 	// have to call our parent's isIdle, because we override it to never return true
@@ -158,7 +178,8 @@ UpdateSleepTime DeployStyleAIUpdate::update( void )
 		{
 			case READY_TO_MOVE:
 				//We're need to deploy before we can attack.
-				setMyState( DEPLOY );
+				if( isInGuardIdleState || willTargetStayInRange( weapon ) )
+					setMyState( DEPLOY );
 				break;
 			case READY_TO_ATTACK:
 				//Let the AI handle attacking.
