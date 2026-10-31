@@ -119,6 +119,13 @@ void Direct3D11_Mirror_Texture(unsigned stage, struct IDirect3DBaseTexture9 * te
 // terrain's world to texture mapping (DX11Post_Set_Haze_Shroud).  Null reads everything as in sight.
 void Direct3D11_Set_Haze_Shroud(struct IDirect3DBaseTexture9 * texture, const float rect[4]);
 
+// The Atmosphere option's fade and sky for this frame (DX11Post_Set_Atmosphere), with the sky's D3D9
+// texture.  Strength zero is no pass.
+void Direct3D11_Set_Atmosphere(const float horizon[3], const float tint[3], float start, float scale,
+	float strength, float ground, float map_width, float map_height, struct IDirect3DBaseTexture9 * sky);
+// That sky, over the whole frame, before anything is drawn on it.  The fade goes on with the haze.
+void Direct3D11_Atmosphere_Sky();
+
 // The vehicle headlights for the frame, nearest the camera first, eight floats each: world
 // position, reach, world direction, cosine of the cone's edge; and what a pixel gains per channel
 // per unit of their light.  A Direct3D 9 run ignores them.

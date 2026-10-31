@@ -15949,6 +15949,14 @@ TOOLTIP:WaterSplashes
 "Suya düşen mermi, bomba ya da ceset su sıçratır ve yüzeyde halkalar yayar. Değişen sadece sizin görüntünüzdür: oyunda hiçbir şey bunu okumaz, diğer oyuncular kendi ayarını görür. Yalnızca Direct3D 11 ve Klasik su ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
 END
 
+GUI:Atmosphere
+"Atmosfer"
+END
+
+TOOLTIP:Atmosphere
+"Kameradan uzak zemin gökyüzünün rengine doğru solar; haritanın bittiği yerde ya da kamera yatık durduğunda siyah yerine haritanın saatine uygun bir gökyüzü görünür. Kameraya yakın zemin temiz kalır, savaş sisi karanlığını korur. Değişen sadece sizin görüntünüzdür: oyunda hiçbir şey bunu okumaz, diğer oyuncular kendi ayarını görür. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır."
+END
+
 GUI:FormationDrag
 "Sürükleyerek Düzen Kur"
 END

@@ -163,6 +163,26 @@ void DX11Post_Set_Haze_Shroud(ID3D11ShaderResourceView * view, const float rect[
 	memcpy(HazeShroudRect, rect, sizeof(HazeShroudRect));
 }
 
+static float AtmosphereHorizon[3] = { 0.0f, 0.0f, 0.0f };
+static float AtmosphereTint[3] = { 0.0f, 0.0f, 0.0f };
+static float AtmosphereFade[4] = { 0.0f, 1.0f, 0.0f, 0.0f };
+static float AtmosphereMapSize[2] = { 0.0f, 0.0f };
+static ID3D11ShaderResourceView * AtmosphereSky = NULL;
+
+void DX11Post_Set_Atmosphere(const float horizon[3], const float tint[3], float start, float scale,
+	float strength, float ground, float map_width, float map_height, ID3D11ShaderResourceView * sky)
+{
+	AtmosphereMapSize[0] = map_width;
+	AtmosphereMapSize[1] = map_height;
+	memcpy(AtmosphereHorizon, horizon, sizeof(AtmosphereHorizon));
+	memcpy(AtmosphereTint, tint, sizeof(AtmosphereTint));
+	AtmosphereFade[0] = start;
+	AtmosphereFade[1] = scale;
+	AtmosphereFade[2] = strength;
+	AtmosphereFade[3] = ground;
+	AtmosphereSky = sky;
+}
+
 static DX11PostWarp Warps[DX11_POST_WARP_LIMIT];
 static unsigned WarpCount = 0;
 
@@ -764,6 +784,110 @@ static const char * const HAZE_SHADER_BODY =
 	"    return float4(colour, saturate(amount));\n"
 	"}\n";
 
+// The Atmosphere option's two programs.  Their constants lie in the haze's slots, the pass writes them
+// over for these draws (PassSetup::Atmosphere): c13 is the fade's start, scale, strength and ground
+// height, c14 the horizon, c21 the map's size, and BlurDirection the sky's tint.
+#define ATMOSPHERE_CONSTANTS \
+	"cbuffer AtmosphereConstants : register(b1)\n" \
+	"{\n" \
+	"    float4 Fade : packoffset(c13);\n" \
+	"    float4 Horizon : packoffset(c14);\n" \
+	"    row_major float4x4 WorldFromClip : packoffset(c15);\n" \
+	"    float4 HazeSun : packoffset(c19);\n" \
+	"    float4 HazeShroudRect : packoffset(c20);\n" \
+	"    float4 MapSize : packoffset(c21);\n" \
+	"};\n" \
+	"static const float BELOW_DIM = 0.55;\n" \
+	"static const float BELOW_REACH = 0.25;\n" \
+	"\n" \
+	"float3 haze_along(float up)\n" \
+	"{\n" \
+	"    return Horizon.rgb * lerp(BELOW_DIM, 1.0, saturate(1.0 + up / BELOW_REACH));\n" \
+	"}\n" \
+	"\n" \
+	"float3 world_at(float2 ndc, float raw)\n" \
+	"{\n" \
+	"    float4 world = mul(float4(ndc, raw, 1.0), WorldFromClip);\n" \
+	"    return world.xyz / world.w;\n" \
+	"}\n" \
+	"\n"
+
+// The sky, over the whole frame before anything is drawn on it, so whatever the frame leaves empty holds
+// it and there is no depth to read: water and glass past the ground blend over it, and a multisampled
+// edge resolves between it and what stands in front.  Painted later out of the depth, it took the water
+// past the terrain's window and left black samples on every skyline under MSAA.  The eye's ray reads
+// EA's own time of day texture from WaterSet, on a plane overhead, opening out of the horizon's colour.
+// Below the horizon, past the map's edge or past the far plane, the ray takes that colour dimming the
+// further down it looks, not the black a frame clears to and not one flat sheet of it; the ground's fade
+// takes the same colour by the same ray, so the two meet with no line.
+static const char * const SKY_SHADER_BODY =
+	ATMOSPHERE_CONSTANTS
+	"Texture2D Sky : register(t3);\n"
+	"SamplerState SkySampler : register(s1);\n"
+	"static const float SKY_REPEAT = 0.35;\n"
+	"static const float SKY_OPEN = 0.30;\n"
+	"\n"
+	"float4 main(VertexOutput input) : SV_TARGET\n"
+	"{\n"
+	"    float2 ndc = float2(input.Texture.x * 2.0 - 1.0, 1.0 - input.Texture.y * 2.0);\n"
+	"    float3 ray = world_at(ndc, 1.0) - world_at(ndc, 0.0);\n"
+	"    float reach = max(length(ray), 0.0001);\n"
+	"    float up = ray.z / reach;\n"
+	"    float open = smoothstep(0.0, SKY_OPEN, up);\n"
+	"    float2 plane = ray.xy / (max(up, 0.05) * reach) * SKY_REPEAT;\n"
+	"    float3 sky = Sky.SampleLevel(SkySampler, plane, 3.0 * (1.0 - open)).rgb * BlurDirection.rgb;\n"
+	"    return float4(lerp(haze_along(up), sky, open), 1.0);\n"
+	"}\n";
+
+// The fade, blended over the scene target by its alpha after the haze.  It goes by eye distance past a
+// start, and nothing reads the clock, so only the camera shifts it.  The start is the eye's distance to
+// its focus and a little over, and never less than the constant: at the game's own tilt the middle of
+// the frame and below it stay clean at any zoom, and only the ground beyond fades.  The focus has a
+// ceiling, or a camera near level would push the start past all the far ground, and jump as it crossed
+// level.  Over the last of the far plane's depth it closes to the horizon whatever the shroud says, or
+// the far plane's cut shows as a line.  Short of that the colour takes the shroud's light (t2, what the
+// terrain multiplied by), so fogged ground comes out the same fade as ground in sight times that light
+// and black ground stays black.  Cutting the amount by the light as the haze does kept the fog dark
+// and left the ground in sight a pale disc inside it, on Alpine Assault's far base at the flat tilt.
+// The ring past the map (MapSize, the playable map from the world's origin) has no shroud cells and
+// draws black, which against a sky stood as a black wall round the world on every map: it goes into the
+// horizon's colour over BORDER_FADE units from the map's edge.  Only depth still at the clear is sky, and
+// takes none; ground in the far plane's last sliver read as sky at 0.99999 and stayed unfaded, a hairline
+// tracing a ridge whose body had gone.  Below the horizon the same empty depth gets the sky's colour again,
+// because the sea runs on past the terrain, writes no depth and draws black out there: Bombardment Beach
+// had a black line across the whole frame.  Depth is Load: filtered across a skyline it is a distance nothing
+// stands at.  Under MSAA it is one sample's for the whole pixel; the fade is gentle enough there that the
+// edge does not show it.
+static const char * const ATMOSPHERE_SHADER_BODY =
+	ATMOSPHERE_CONSTANTS
+	"Texture2D Shroud : register(t2);\n"
+	"static const float FOCUS_MARGIN = 1.1;\n"
+	"static const float FOCUS_MOST = 2000.0;\n"
+	"static const float FAR_CLOSE = 0.85;\n"
+	"static const float BORDER_FADE = 100.0;\n"
+	"\n"
+	"float4 main(VertexOutput input) : SV_TARGET\n"
+	"{\n"
+	"    float raw = Extra.Load(int3(input.Position.xy, 0)).r;\n"
+	"    float2 ndc = float2(input.Texture.x * 2.0 - 1.0, 1.0 - input.Texture.y * 2.0);\n"
+	"    float3 eye = world_at(ndc, 0.0);\n"
+	"    float3 ray = world_at(ndc, raw) - eye;\n"
+	"    float reach = length(ray);\n"
+	"    if (raw >= 1.0) return float4(haze_along(ray.z / max(reach, 0.0001)), ray.z < 0.0 ? 1.0 : 0.0);\n"
+	"    float3 centreEye = world_at(float2(0.0, 0.0), 0.0);\n"
+	"    float3 axis = world_at(float2(0.0, 0.0), 1.0) - centreEye;\n"
+	"    float axisLength = length(axis);\n"
+	"    float focus = (axis.z < 0.0) ? min((Fade.w - centreEye.z) / axis.z * axisLength, FOCUS_MOST) : FOCUS_MOST;\n"
+	"    float past = max(reach - max(focus * FOCUS_MARGIN, Fade.x), 0.0);\n"
+	"    float amount = Fade.z * (1.0 - exp(-past / Fade.y));\n"
+	"    float2 here = (eye + ray).xy;\n"
+	"    float lit = lerp(1.0, Shroud.SampleLevel(Sampler, (here - HazeShroudRect.xy) * HazeShroudRect.zw, 0.0).g, HazeSun.z);\n"
+	"    float2 outside = max(-here, here - MapSize.xy);\n"
+	"    float closing = max(smoothstep(FAR_CLOSE, 1.0, dot(ray, axis) / (axisLength * axisLength)),\n"
+	"        smoothstep(0.0, BORDER_FADE, max(outside.x, outside.y)));\n"
+	"    return float4(haze_along(ray.z / max(reach, 0.0001)) * lerp(lit, 1.0, closing), max(amount, closing));\n"
+	"}\n";
+
 // The bright pass, downsampling as it goes: four taps of the full size frame averaged into one
 // quarter size texel, then the threshold taken off its brightest channel.  What survives is the
 // amount by which something was brighter than white, which is a quantity an eight bit scene target
@@ -999,6 +1123,7 @@ DX11PostProcessClass::DX11PostProcessClass()
 	, WarpShader(NULL)
 	, SceneOcclusionShader(NULL)
 	, HazeShader(NULL)
+	, WrapSampler(NULL)
 	, Sampler(NULL)
 	, BlendState(NULL)
 	, MultiplyBlendState(NULL)
@@ -1019,10 +1144,12 @@ DX11PostProcessClass::DX11PostProcessClass()
 	, Hazed(false)
 	, HazeRefused(false)
 	, HazeShroudView(NULL)
+	, AtmosphereRefused(false)
 	, WorldAoRefused(false)
 {
 	memset(HazeWorldFromClip, 0, sizeof(HazeWorldFromClip));
 	memset(WorldAoShaders, 0, sizeof(WorldAoShaders));
+	memset(AtmosphereShaders, 0, sizeof(AtmosphereShaders));
 	memset(WorldAoTargets, 0, sizeof(WorldAoTargets));
 	memset(WorldAoProjection, 0, sizeof(WorldAoProjection));
 	memset(PixelShaders, 0, sizeof(PixelShaders));
@@ -1065,6 +1192,11 @@ void DX11PostProcessClass::Shutdown()
 	Release_Targets();
 	HazeShroudView = NULL;
 	HazeShroudSource = NULL;
+	AtmosphereSky = NULL;
+	for (unsigned index = 0; index < ATMOSPHERE_PROGRAMS; ++index) {
+		release_interface(reinterpret_cast<IUnknown **>(&AtmosphereShaders[index]));
+	}
+	release_interface(reinterpret_cast<IUnknown **>(&WrapSampler));
 	release_interface(reinterpret_cast<IUnknown **>(&ConstantBuffer));
 	release_interface(reinterpret_cast<IUnknown **>(&RasterizerState));
 	release_interface(reinterpret_cast<IUnknown **>(&DepthState));
@@ -1093,6 +1225,7 @@ void DX11PostProcessClass::Shutdown()
 	ShadersReady = false;
 	Resolved = false;
 	HazeRefused = false;
+	AtmosphereRefused = false;
 	WorldAoRefused = false;
 }
 
@@ -1190,6 +1323,11 @@ bool DX11PostProcessClass::Create_States()
 	sampler.ComparisonFunc = D3D11_COMPARISON_NEVER;
 	sampler.MaxLOD = D3D11_FLOAT32_MAX;
 	if (FAILED(device->CreateSamplerState(&sampler, &Sampler))) {
+		return false;
+	}
+	sampler.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampler.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	if (FAILED(device->CreateSamplerState(&sampler, &WrapSampler))) {
 		return false;
 	}
 
@@ -1399,6 +1537,83 @@ void DX11PostProcessClass::Open_Frame()
 {
 	Occluded = false;
 	Hazed = false;
+}
+
+bool DX11PostProcessClass::Wants_Atmosphere_Programs() const
+{
+	return AtmosphereFade[2] > 0.0f && AtmosphereShaders[ATMOSPHERE_PROGRAMS - 1] == NULL && !AtmosphereRefused
+		&& ShadersReady;
+}
+
+const char * DX11PostProcessClass::Atmosphere_Program_Source(unsigned index) const
+{
+	static const std::string sources[ATMOSPHERE_PROGRAMS] = {
+		std::string(PIXEL_SHADER_PROLOGUE) + SKY_SHADER_BODY,
+		std::string(PIXEL_SHADER_PROLOGUE) + ATMOSPHERE_SHADER_BODY
+	};
+	return sources[index].c_str();
+}
+
+void DX11PostProcessClass::Load_Atmosphere_Program(unsigned index, const void * bytecode, SIZE_T size)
+{
+	if (bytecode == NULL || FAILED(Device->Get_Device()->CreatePixelShader(bytecode, size, NULL,
+			&AtmosphereShaders[index]))) {
+		AtmosphereShaders[index] = NULL;
+		AtmosphereRefused = true;
+	}
+}
+
+void DX11PostProcessClass::Compile_Atmosphere_Programs()
+{
+	const char * const bodies[ATMOSPHERE_PROGRAMS] = { SKY_SHADER_BODY, ATMOSPHERE_SHADER_BODY };
+	for (unsigned index = 0; index < ATMOSPHERE_PROGRAMS; ++index) {
+		if (AtmosphereShaders[index] == NULL && !compile_pixel_shader(compiler_function(), Device->Get_Device(),
+				bodies[index], &AtmosphereShaders[index])) {
+			AtmosphereShaders[index] = NULL;
+			AtmosphereRefused = true;
+		}
+	}
+}
+
+bool DX11PostProcessClass::Draw_Atmosphere(unsigned index, ID3D11ShaderResourceView * depth,
+	const float world_from_clip[16])
+{
+	if (AtmosphereFade[2] <= 0.0f || AtmosphereShaders[index] == NULL || Resolved || !ShadersReady
+			|| SceneTarget.View == NULL || Device->Get_Scene_View() != SceneTarget.View) {
+		return false;
+	}
+	memcpy(HazeWorldFromClip, world_from_clip, sizeof(HazeWorldFromClip));
+	// The game pushes the shroud every frame this is on.  The haze, when it ran, has taken it for the
+	// frame's view already.
+	if (!Hazed) {
+		HazeShroudView = HazeShroudSource;
+	}
+
+	PassSetup pass;
+	memset(&pass, 0, sizeof(pass));
+	pass.Shader = AtmosphereShaders[index];
+	pass.Extra = depth;
+	pass.Blend = depth != NULL;
+	pass.World = true;
+	pass.Atmosphere = true;
+	pass.Destination = SceneTarget.View;
+	pass.DestinationWidth = Width;
+	pass.DestinationHeight = Height;
+	pass.SourceWidth = Width;
+	pass.SourceHeight = Height;
+	Draw_Pass(pass);
+	return true;
+}
+
+bool DX11PostProcessClass::Sky_Scene(const float world_from_clip[16])
+{
+	return Draw_Atmosphere(0, NULL, world_from_clip);
+}
+
+bool DX11PostProcessClass::Atmosphere_Scene(ID3D11ShaderResourceView * depth,
+	const float world_from_clip[16])
+{
+	return Draw_Atmosphere(1, depth, world_from_clip);
 }
 
 bool DX11PostProcessClass::Wants_Haze_Program() const
@@ -1667,6 +1882,12 @@ void DX11PostProcessClass::Draw_Pass(const PassSetup & pass)
 	block.HazeSun[2] = (HazeShroudView != NULL) ? 1.0f : 0.0f;
 	memcpy(block.HazeShroudRect, HazeShroudRect, sizeof(block.HazeShroudRect));
 	memcpy(block.WorldAoProjection, WorldAoProjection, sizeof(block.WorldAoProjection));
+	if (pass.Atmosphere) {
+		memcpy(block.Haze, AtmosphereFade, sizeof(block.Haze));
+		memcpy(block.HazeColour, AtmosphereHorizon, sizeof(AtmosphereHorizon));
+		memcpy(block.BlurDirection, AtmosphereTint, sizeof(AtmosphereTint));
+		memcpy(block.WorldAoProjection, AtmosphereMapSize, sizeof(AtmosphereMapSize));
+	}
 	memcpy(mapped.pData, &block, sizeof(block));
 	context->Unmap(ConstantBuffer, 0);
 
@@ -1704,12 +1925,20 @@ void DX11PostProcessClass::Draw_Pass(const PassSetup & pass)
 		context->PSSetConstantBuffers(1, 1, &ConstantBuffer);
 		context->PSSetShaderResources(2, 1, &HazeShroudView);
 	}
+	if (pass.Atmosphere) {
+		context->PSSetShaderResources(3, 1, &AtmosphereSky);
+		context->PSSetSamplers(1, 1, &WrapSampler);
+	}
 
 	context->Draw(FULL_SCREEN_VERTEX_COUNT, 0);
 
 	if (haze) {
 		ID3D11ShaderResourceView * no_haze_resource = NULL;
 		context->PSSetShaderResources(2, 1, &no_haze_resource);
+	}
+	if (pass.Atmosphere) {
+		ID3D11ShaderResourceView * no_sky = NULL;
+		context->PSSetShaderResources(3, 1, &no_sky);
 	}
 
 	// The texture this pass read is the target the next one writes, and D3D11 unbinds a resource

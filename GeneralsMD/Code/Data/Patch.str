@@ -1556,6 +1556,14 @@ TOOLTIP:WaterSplashes
 "A shell, a bomb or a falling body that comes down in water throws up a splash and sends rings across the surface. Only your picture changes: nothing in the game reads it, and other players see their own setting. Direct3D 11 and Classic water only, and off under Classic Graphics. Applies when you press Accept."
 END
 
+GUI:Atmosphere
+"Atmosphere"
+END
+
+TOOLTIP:Atmosphere
+"The ground far from the camera fades toward the sky's colour, and where the map ends or the camera lies flat you see a sky by the map's time of day instead of black. The ground near the camera stays clear and fog of war keeps its dark. Only your picture changes: nothing in the game reads it, and other players see their own setting. Direct3D 11 only, and off under Classic Graphics."
+END
+
 GUI:FormationDrag
 "Drag Out A Formation"
 END

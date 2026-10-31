@@ -148,6 +148,7 @@ OPTION_BOOL_ACCESSORS( m_hemiAmbient )
 OPTION_BOOL_ACCESSORS( m_ambientOcclusion )
 OPTION_BOOL_ACCESSORS( m_weatherEffects )
 OPTION_BOOL_ACCESSORS( m_waterSplashes )
+OPTION_BOOL_ACCESSORS( m_atmosphere )
 OPTION_BOOL_ACCESSORS( m_internalHdr )
 OPTION_INT_ACCESSORS( m_shadowQuality )
 OPTION_INT_ACCESSORS( m_graphicsQuality )
@@ -659,6 +660,13 @@ const OptionDef TheOptionCatalog[] =
 	{ "WaterSplashes",						OPT_WND( "CheckWaterSplashes" ), "GUI:WaterSplashes",
 		OPTION_BOOL, APPLY_LIVE, 0, 1,
 		get_m_waterSplashes, set_m_waterSplashes },
+
+	// The far ground fades toward the horizon and what the frame left empty takes a sky.  Read every frame,
+	// and no sim reads it.  Off under Classic graphics and -d3d9, and no row in the quality table: an opt-in
+	// until it has been seen.  On Options > Graphics, under Warm Light: Effects is full.
+	{ "Atmosphere",								OPT_WND( "CheckAtmosphere" ), "GUI:Atmosphere",
+		OPTION_BOOL, APPLY_LIVE, 0, 1,
+		get_m_atmosphere, set_m_atmosphere },
 
 	// What passes white keeps its colour on the way to the eight bit screen; no HDR monitor output.  The
 	// post chain is told every frame.  Classic graphics has no half float scene and -d3d9 no chain, and

@@ -148,6 +148,16 @@ void DX11Post_Set_Haze(const float colour[3], float top, float thickness, float 
 // every frame; null reads everything as in sight.  The view is borrowed, not held.
 void DX11Post_Set_Haze_Shroud(ID3D11ShaderResourceView * view, const float rect[4]);
 
+// The Atmosphere option: the far ground fades toward the horizon's colour and whatever the frame left
+// undrawn takes a sky.  Laid over the opaque world with the haze, under the particles.  Nothing moves
+// but the camera.  Start is the least eye distance the fade begins at, the frame's own focus pushing it
+// further at a higher camera; scale how far the fade takes to reach about two thirds of strength; ground
+// the world height the camera's focus lies on; the map's width and height how far the playable map runs
+// from the world's origin.  Tint multiplies the sky's texture, which is borrowed for the frame.  Strength
+// zero, the default, is no pass at all.  Set every frame.
+void DX11Post_Set_Atmosphere(const float horizon[3], const float tint[3], float start, float scale,
+	float strength, float ground, float map_width, float map_height, ID3D11ShaderResourceView * sky);
+
 // A blast warping the picture around it: the frame drawn toward a point and then pushed out by a
 // ring that travels away from it.  Not an effect in the chain and not a switch: whatever chain is
 // set, one more pass goes on its end for every frame that has a warp in it, and a frame with none
@@ -240,6 +250,16 @@ public:
 	// The same program compiled here, past any cache, for a caller without the backend (the tests).
 	void Compile_Haze_Program();
 
+	// The same again for the Atmosphere option's sky, over the whole frame before anything is drawn
+	// on it, and its fade, over the haze.
+	enum { ATMOSPHERE_PROGRAMS = 2 };
+	bool Sky_Scene(const float world_from_clip[16]);
+	bool Atmosphere_Scene(ID3D11ShaderResourceView * depth, const float world_from_clip[16]);
+	bool Wants_Atmosphere_Programs() const;
+	const char * Atmosphere_Program_Source(unsigned index) const;
+	void Load_Atmosphere_Program(unsigned index, const void * bytecode, SIZE_T size);
+	void Compile_Atmosphere_Programs();
+
 	// The Ambient Occlusion option multiplied into the scene target as it stands: half size, in world
 	// units out of the depth given, blurred, and brought back up by distance.  The scene calls it before
 	// the water and every translucent draw, so none of those takes a corner's shade.  It takes the
@@ -300,8 +320,11 @@ private:
 		bool Blend;
 		// The pass reads the world's fields of the constants at b1 and the shroud at t2, as the haze does.
 		bool World;
+		// The Atmosphere option's: its own constants in the haze's slots, the sky at t3 and s1.
+		bool Atmosphere;
 	};
 
+	bool Draw_Atmosphere(unsigned index, ID3D11ShaderResourceView * depth, const float world_from_clip[16]);
 	bool Create_Shaders();
 	bool Create_States();
 	// A multisampled target is drawn into and resolved, never read, so it has no shader view.
@@ -334,6 +357,9 @@ private:
 	ID3D11PixelShader * WarpShader;
 	ID3D11PixelShader * SceneOcclusionShader;
 	ID3D11PixelShader * HazeShader;
+	ID3D11PixelShader * AtmosphereShaders[ATMOSPHERE_PROGRAMS];
+	// The sky's texture repeats, where every other read in the chain clamps.
+	ID3D11SamplerState * WrapSampler;
 	ID3D11SamplerState * Sampler;
 	ID3D11BlendState * BlendState;
 	ID3D11BlendState * MultiplyBlendState;
@@ -378,6 +404,8 @@ private:
 	bool HazeRefused;
 	// The terrain's shroud texture under the haze, borrowed from its D3D9 texture each pass.
 	ID3D11ShaderResourceView * HazeShroudView;
+	// An Atmosphere program failed to compile: not tried again.
+	bool AtmosphereRefused;
 	// The Ambient Occlusion option's programs, the projection scale it was handed, and a refusal: not
 	// tried again.
 	ID3D11PixelShader * WorldAoShaders[WORLD_AO_PROGRAMS];

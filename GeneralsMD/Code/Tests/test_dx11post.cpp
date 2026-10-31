@@ -799,6 +799,70 @@ TEST(dx11post_the_ground_haze_lies_over_a_scene_under_its_top)
 	}
 }
 
+// The Atmosphere option drawn for real, as the haze's test is.  With depth at a half the ground lies half
+// a unit from the eye, a third of the way into a fade of scale one, and takes the white horizon.  With
+// depth at the far plane and the eye looking up the fade leaves the frame alone: it is sky by then.
+// Looking down, the same empty depth takes the horizon, over the sea that draws past the terrain.  The sky
+// itself reads no depth and covers everything, a null texture here, so it goes black.
+TEST(dx11post_the_atmosphere_fades_the_far_ground_and_the_sky_fills_the_frame)
+{
+	DeviceFixture fixture;
+	if (!fixture.Create()) {
+		printf("skip: no Direct3D 11 device on this machine\n");
+		return;
+	}
+
+	const unsigned char LIFTED_BY_AT_LEAST = 16;
+	DX11DeviceClass & device = fixture.Get_Device();
+	DX11PostProcessClass & post = fixture.Get_Post();
+	const float white[3] = { 1.0f, 1.0f, 1.0f };
+	const float identity[16] = {
+		1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+	// The eye at height nought looks down its depth, its focus on the ground right there, so no start.
+	const float looking_down[16] = {
+		1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+	DX11Post_Set_Atmosphere(white, white, 0.0f, 1.0f, 1.0f, 0.0f, 1.0e6f, 1.0e6f, NULL);
+
+	unsigned char picture[SURFACE_SIZE * SURFACE_SIZE * BYTES_A_PIXEL];
+	fill_flat(picture, DARK_LEVEL);
+	const DX11PostEffect copy_only[] = { DX11_POST_COPY };
+	post.Set_Chain(copy_only, 1);
+	post.Compile_Atmosphere_Programs();
+
+	const float DEPTHS[4] = { 0.5f, 1.0f, 0.5f, 1.0f };
+	unsigned char levels[4] = { 0, 0, 0, 0 };
+	for (unsigned run = 0; run < 4; ++run) {
+		post.Open_Frame();
+		post.Begin_Frame();
+		device.Set_Scene_View(post.Scene_View());
+		device.Get_Context()->ClearDepthStencilView(device.Get_Depth_Stencil_View(), D3D11_CLEAR_DEPTH,
+			DEPTHS[run], 0);
+		const bool drawn = write_scene(device, post, picture)
+			&& (run == 2 ? post.Sky_Scene(identity)
+				: post.Atmosphere_Scene(device.Get_Depth_Texture(), run == 1 ? identity : looking_down))
+			&& post.Run_Chain();
+		device.Set_Scene_View(NULL);
+		CHECK(drawn);
+		unsigned pitch = 0;
+		unsigned char * result = drawn ? read_back_buffer(device, pitch) : NULL;
+		CHECK(result != NULL);
+		if (result != NULL) {
+			levels[run] = pixel_level(result, pitch, SURFACE_SIZE / 2, SURFACE_SIZE / 2);
+			delete [] result;
+		}
+	}
+	DX11Post_Set_Atmosphere(white, white, 0.0f, 1.0f, 0.0f, 0.0f, 1.0e6f, 1.0e6f, NULL);
+
+	CHECK(levels[0] >= DARK_LEVEL + LIFTED_BY_AT_LEAST);
+	CHECK(levels[1] == DARK_LEVEL);
+	CHECK(levels[2] == 0);
+	CHECK(levels[3] >= DARK_LEVEL + LIFTED_BY_AT_LEAST);
+
+	// Strength zero is no pass at all.
+	post.Open_Frame();
+	CHECK(!post.Atmosphere_Scene(device.Get_Depth_Texture(), identity));
+}
+
 // The Ambient Occlusion option drawn for real over a white scene.  The world is the clip space times
 // forty across and a thousand deep, so the frame is 80 units across at 0.8 of a pixel a unit, the left
 // half stands 10 units nearer the eye than the right, and the near plane, which a tap past the frame's

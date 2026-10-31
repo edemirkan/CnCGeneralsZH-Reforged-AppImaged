@@ -1464,7 +1464,13 @@ void RTS3DScene::Customized_Render( RenderInfoClass &rinfo )
 	if (TheW3DVolumetricShadowManager != NULL && m_customPassMode == SCENE_PASS_DEFAULT &&
 		!ShaderClass::Is_Backface_Culling_Inverted() &&
 		Get_Extra_Pass_Polygon_Mode() == EXTRA_PASS_DISABLE)
+	{
 		TheW3DVolumetricShadowManager->renderShadowMap(rinfo.Camera);
+		// Before the frame for the same reason: it has to lie under all of it.  The pass above has just
+		// handed the backend the camera it needs.
+		if (TheGlobalData->m_atmosphere)
+			Direct3D11_Atmosphere_Sky();
+	}
 
 	Int localPlayerIndex = ThePlayerList ? TheObserverCamera.getShroudPlayerIndex() : 0;
 

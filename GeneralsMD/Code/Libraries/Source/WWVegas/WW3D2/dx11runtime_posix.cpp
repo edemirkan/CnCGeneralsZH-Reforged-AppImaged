@@ -61,6 +61,8 @@ DX11BufferTwinClass * Direct3D11_Twin_Vertex_Buffer(unsigned, bool) { return NUL
 DX11BufferTwinClass * Direct3D11_Twin_Index_Buffer(unsigned, bool) { return NULL; }
 void Direct3D11_Mirror_Texture(unsigned, struct IDirect3DBaseTexture9 *) {}
 void Direct3D11_Set_Haze_Shroud(struct IDirect3DBaseTexture9 *, const float [4]) {}
+void Direct3D11_Set_Atmosphere(const float [3], const float [3], float, float, float, float, float, float, struct IDirect3DBaseTexture9 *) {}
+void Direct3D11_Atmosphere_Sky() {}
 
 void Direct3D11_Set_Headlights(const float *, unsigned, const float [3]) {}
 void Direct3D11_Set_Blast_Lights(const float *, unsigned) {}

@@ -564,6 +564,17 @@ void Direct3D11_Set_Haze_Shroud(struct IDirect3DBaseTexture9 * texture, const fl
 		: DX11Texture_Mirror(Device.Get_Device(), Device.Get_Context(), texture), rect);
 }
 
+void Direct3D11_Set_Atmosphere(const float horizon[3], const float tint[3], float start, float scale,
+	float strength, float ground, float map_width, float map_height, struct IDirect3DBaseTexture9 * sky)
+{
+	if (!Active) {
+		return;
+	}
+	DX11Post_Set_Atmosphere(horizon, tint, start, scale, strength, ground, map_width, map_height, sky == NULL
+		? NULL
+		: DX11Texture_Mirror(Device.Get_Device(), Device.Get_Context(), sky));
+}
+
 void Direct3D11_Set_Headlights(const float * lights, unsigned count, const float gain[3])
 {
 	if (Active) {
@@ -767,11 +778,32 @@ void Direct3D11_Occlude_Scene()
 		}
 	}
 	float world_from_clip[16];
-	if (Backend.Scene_World_From_Clip(world_from_clip)
-			&& Post.Haze_Scene(Device.Get_Depth_Texture(), world_from_clip)) {
-		drew = true;
+	if (Backend.Scene_World_From_Clip(world_from_clip)) {
+		drew = Post.Haze_Scene(Device.Get_Depth_Texture(), world_from_clip) || drew;
+		drew = Post.Atmosphere_Scene(Device.Get_Depth_Texture(), world_from_clip) || drew;
 	}
 	if (drew) {
+		Backend.Resume_Scene();
+	}
+}
+
+void Direct3D11_Atmosphere_Sky()
+{
+	if (!Active || !DrawEffectsAllowed || !Backend.Draws_Into_Scene()) {
+		return;
+	}
+	if (Post.Wants_Atmosphere_Programs()) {
+		for (unsigned index = 0; index < DX11PostProcessClass::ATMOSPHERE_PROGRAMS; ++index) {
+			std::vector<unsigned char> code;
+			if (Backend.Compile_Pixel_Program(Post.Atmosphere_Program_Source(index), "dx11atmosphere", code) && !code.empty()) {
+				Post.Load_Atmosphere_Program(index, &code[0], code.size());
+			} else {
+				Post.Load_Atmosphere_Program(index, NULL, 0);
+			}
+		}
+	}
+	float world_from_clip[16];
+	if (Backend.Scene_World_From_Clip(world_from_clip) && Post.Sky_Scene(world_from_clip)) {
 		Backend.Resume_Scene();
 	}
 }

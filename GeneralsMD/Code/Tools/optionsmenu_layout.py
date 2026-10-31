@@ -245,6 +245,7 @@ NEW_CONTROLS = [
     (CHECK,  "CheckInternalHdr",       "GUI:InternalHdr"),
     (CHECK,  "CheckWeather",           "GUI:Weather"),
     (CHECK,  "CheckWaterSplashes",     "GUI:WaterSplashes"),
+    (CHECK,  "CheckAtmosphere",        "GUI:Atmosphere"),
     (LABEL,  "LabelGraphicsQuality",   "GUI:GraphicsQuality"),
     (SLIDER, "SliderGraphicsQuality",  None),
 ]
@@ -366,7 +367,8 @@ GROUP_LAYOUT = [
             setting("LabelAnisotropy", "SliderAnisotropy", "ValueAnisotropy"),
             # the Lighting column is full with the water and cloud styles
             ("check", "CheckMapLight"),
-            ("check", "CheckTeamGlow")]),
+            ("check", "CheckTeamGlow"),
+            ("check", "CheckAtmosphere")]),
         ("GUI:OptionsGroupLighting", [
             setting("LabelLightingStyle", "ComboBoxLightingStyle"),
             setting("LabelBloom", "ComboBoxBloom"),
