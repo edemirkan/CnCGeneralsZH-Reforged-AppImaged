@@ -1465,10 +1465,34 @@ const Real Drawable::getScale (void) const
 }
 
 //-------------------------------------------------------------------------------------------------
+/** The Collapse option: a building that is about to vanish or swap to rubble in one frame hands over
+	its model as it stands, which is why this comes before the rubble state.  What stages its own end
+	keeps it: EA's high rises, towers that topple, a slow death and a landmark bridge's animation. */
+//-------------------------------------------------------------------------------------------------
+void Drawable::startCollapse()
+{
+	const Object *obj = getObject();
+	if (obj == NULL || !isKindOf(KINDOF_STRUCTURE) || isKindOf(KINDOF_BRIDGE) || isKindOf(KINDOF_BRIDGE_TOWER)
+		|| obj->testStatus(OBJECT_STATUS_UNDER_CONSTRUCTION) || obj->testStatus(OBJECT_STATUS_SOLD))
+		return;
+	static const NameKeyType collapseKey = NAMEKEY("StructureCollapseUpdate");
+	static const NameKeyType toppleKey = NAMEKEY("StructureToppleUpdate");
+	static const NameKeyType slowDeathKey = NAMEKEY("SlowDeathBehavior");
+	if (obj->findUpdateModule(collapseKey) || obj->findUpdateModule(toppleKey) || obj->findUpdateModule(slowDeathKey))
+		return;
+	// the template's: by now the body has put the object's own geometry at rubble height
+	const Real height = obj->getTemplate()->getTemplateGeometryInfo().getMaxHeightAbovePosition();
+	doClientWork( [this, height]() { TheGameClient->structureCollapsing( this, height ); }, WORK_AFTER_FLUSH );
+}
+
+//-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
 void Drawable::reactToBodyDamageStateChange(BodyDamageType newState)
 {
-	static const ModelConditionFlagType TheDamageMap[BODYDAMAGETYPE_COUNT] = 
+	if (newState == BODY_RUBBLE && TheGlobalData->m_structureCollapse && !TheGameLogic->isLoadingMap())
+		startCollapse();
+
+	static const ModelConditionFlagType TheDamageMap[BODYDAMAGETYPE_COUNT] =
 	{
 		MODELCONDITION_INVALID,
 		MODELCONDITION_DAMAGED,

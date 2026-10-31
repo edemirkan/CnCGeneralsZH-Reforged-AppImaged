@@ -1564,6 +1564,14 @@ TOOLTIP:Atmosphere
 "The ground far from the camera fades toward the sky's colour, and where the map ends or the camera lies flat you see a sky by the map's time of day instead of black. The ground near the camera stays clear and fog of war keeps its dark. Only your picture changes: nothing in the game reads it, and other players see their own setting. Direct3D 11 only, and off under Classic Graphics."
 END
 
+GUI:StructureCollapse
+"Collapsing Buildings"
+END
+
+TOOLTIP:StructureCollapse
+"A destroyed building sinks into the ground under the blast instead of vanishing in one frame, or swapping to its rubble in one. Only your picture changes: it blocks nothing, nothing in the game reads it, and other players see their own setting. Direct3D 11 only, and off under Classic Graphics."
+END
+
 GUI:FormationDrag
 "Drag Out A Formation"
 END

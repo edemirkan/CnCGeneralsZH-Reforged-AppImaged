@@ -3,8 +3,19 @@
 #include "test_harness.h"
 
 #include "W3DDevice/GameClient/GroundMarks.h"
+#include "W3DDevice/GameClient/StructureCollapse.h"
 
 using namespace GroundMarks;
+
+TEST(a_collapsing_building_waits_a_beat_then_gets_faster_and_is_under_by_its_time)
+{
+	using namespace StructureCollapse;
+	CHECK_EQ(sunk(0.1f, 1.5f), 0.0f);
+	CHECK(sunk(0.6f, 1.5f) < 0.5f * sunk(1.2f, 1.5f));
+	CHECK_EQ(sunk(1.5f, 1.5f), 1.0f);
+	CHECK(sinkSeconds(20.0f) < sinkSeconds(60.0f));
+	CHECK_EQ(sinkSeconds(1000.0f), 2.5f);
+}
 
 TEST(a_mark_holds_then_fades_to_nothing)
 {

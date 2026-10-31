@@ -62,11 +62,16 @@
 #include "W3DDevice/GameClient/W3DScene.h"
 #include "W3DDevice/GameClient/W3DShadow.h"
 #include "W3DDevice/GameClient/GroundMarks.h"
+#include "W3DDevice/GameClient/StructureCollapse.h"
+#include "W3DDevice/GameClient/Module/W3DModelDraw.h"
 #include "W3DDevice/GameClient/HeightMap.h"
+#include "WW3D2/hlod.h"
 #include "WW3D2/part_emt.h"
 #include "WW3D2/hanim.h"
 #include "WW3D2/htree.h"
 #include "WW3D2/animobj.h"  ///< @todo superhack for demo, remove!
+
+extern void disableUVAnimations(RenderObjClass *robj);	// W3DGhostObject.cpp
 
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
@@ -99,6 +104,9 @@ void W3DGameClient::init( void )
 void W3DGameClient::update( void )
 {
 
+	// before the base, whose draw opens the window the tick runs beside
+	StructureCollapse::update();
+
 	// call base
 	GameClient::update();
 
@@ -110,6 +118,8 @@ void W3DGameClient::update( void )
 //-------------------------------------------------------------------------------------------------
 void W3DGameClient::reset( void )
 {
+
+	StructureCollapse::clear();
 
 	// call base class
 	GameClient::reset();
@@ -244,6 +254,41 @@ void W3DGameClient::splashInWater(const Coord3D *pos, Real radius)
 			sys->m_colorKey[key].color.green *= bright;
 			sys->m_colorKey[key].color.blue *= bright;
 		}
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+/** The Collapse option, with the model the building had a frame before rubble: the copy that goes
+	* into the ground.  Runs among the drawable's own work after the tick, and the drawable may be gone
+	* by the next frame.  The animation stops where it stands, as a ghost object's does. */
+//-------------------------------------------------------------------------------------------------
+void W3DGameClient::structureCollapsing(Drawable *draw, Real height)
+{
+	if (TheGlobalData->m_classicGraphics || !Direct3D11_Present_Is_Enabled() || W3DDisplay::m_3DScene == NULL)
+		return;
+	// a slab of foundation or a mine's stub has nothing to go down
+	const Real MIN_HEIGHT = 8.0f;
+	if (height < MIN_HEIGHT || draw->isDrawableEffectivelyHidden())
+		return;
+	for (DrawModule **dm = draw->getDrawModules(); *dm; ++dm)
+	{
+		ObjectDrawInterface *di = (*dm)->getObjectDrawInterface();
+		RenderObjClass *robj = di ? ((W3DModelDraw *)di)->getRenderObject() : NULL;
+		if (robj == NULL || robj->Is_Hidden())
+			continue;
+		RenderObjClass *copy = robj->Clone();
+		copy->Set_ObjectColor(robj->Get_ObjectColor());
+		copy->Set_Transform(robj->Get_Transform());
+		copy->Set_Collision_Type(0);	// a click goes through to what stands behind it
+		if (robj->Class_ID() == RenderObjClass::CLASSID_HLOD)
+		{
+			float frame, mult;
+			int mode, numFrames;
+			HAnimClass *anim = ((HLodClass *)robj)->Peek_Animation_And_Info(frame, numFrames, mode, mult);
+			copy->Set_Animation(anim, frame);
+			disableUVAnimations(copy);
+		}
+		StructureCollapse::add(copy, height);
 	}
 }
 

@@ -246,6 +246,7 @@ NEW_CONTROLS = [
     (CHECK,  "CheckWeather",           "GUI:Weather"),
     (CHECK,  "CheckWaterSplashes",     "GUI:WaterSplashes"),
     (CHECK,  "CheckAtmosphere",        "GUI:Atmosphere"),
+    (CHECK,  "CheckStructureCollapse", "GUI:StructureCollapse"),
     (LABEL,  "LabelGraphicsQuality",   "GUI:GraphicsQuality"),
     (SLIDER, "SliderGraphicsQuality",  None),
 ]
@@ -350,7 +351,9 @@ GROUP_LAYOUT = [
             setting("LabelFullscreenScaling", "ComboBoxFullscreenScaling"),
             ("check", "CheckVSync")]),
         ("GUI:OptionsGroupPicture", [
-            setting("GammaLabel", "SliderGamma", "ValueGamma")])]),
+            setting("GammaLabel", "SliderGamma", "ValueGamma"),
+            # every column of Graphics and Effects is full
+            ("check", "CheckStructureCollapse")])]),
 
     ("PageGraphics", [
         # the particle limit went to Effects' Particles group to make room for the quality slider

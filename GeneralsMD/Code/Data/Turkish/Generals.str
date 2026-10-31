@@ -15957,6 +15957,14 @@ TOOLTIP:Atmosphere
 "Kameradan uzak zemin gökyüzünün rengine doğru solar; haritanın bittiği yerde ya da kamera yatık durduğunda siyah yerine haritanın saatine uygun bir gökyüzü görünür. Kameraya yakın zemin temiz kalır, savaş sisi karanlığını korur. Değişen sadece sizin görüntünüzdür: oyunda hiçbir şey bunu okumaz, diğer oyuncular kendi ayarını görür. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır."
 END
 
+GUI:StructureCollapse
+"Yıkılan Binalar"
+END
+
+TOOLTIP:StructureCollapse
+"Yok edilen bina bir karede kaybolmak ya da enkaza dönmek yerine patlamanın altında yere gömülür. Değişen sadece sizin görüntünüzdür: hiçbir şeyi engellemez, oyunda hiçbir şey bunu okumaz, diğer oyuncular kendi ayarını görür. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır."
+END
+
 GUI:FormationDrag
 "Sürükleyerek Düzen Kur"
 END

@@ -1142,6 +1142,7 @@ GlobalData::GlobalData()
 	m_weatherEffects = FALSE;
 	m_waterSplashes = FALSE;
 	m_atmosphere = FALSE;
+	m_structureCollapse = FALSE;
 	m_internalHdr = FALSE;
 	m_horizontalScrollSpeedFactor = 1.0;
 	m_verticalScrollSpeedFactor = 1.0;

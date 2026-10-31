@@ -474,6 +474,7 @@ public:
 		first (animation timing, a model rebuild), which an on-demand flush inside the tick runs; the
 		rest an on-demand flush leaves for after the tick. */
 	void doClientWork( const std::function<void()>& work, ClientWorkOrder order, Bool movesBones = FALSE );
+	void startCollapse();		///< the Collapse option, on the way to rubble
 
 	//---------------------------------------------------------------------------
 	void setDrawableStatus( DrawableStatus bit )  { BitSet( m_status, bit ); }

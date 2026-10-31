@@ -8,6 +8,10 @@ found and fixed, EA's own, not port damage.**
 
 ---
 
+## Buildings go down
+
+- Collapsing Buildings, under Options, Display, is a new setting, off by default until it has been played. EA's building stands until the frame it dies, then it is gone or it is a pile of rubble, with a cloud thrown over the moment. With this on it holds for a beat, shudders, leans about seven degrees and goes into the ground, a second for a small one and up to two and a half for a tall one. Most of the fall happens inside EA's cloud, so the part you see is the first half second, the roof dropping as the smoke comes up. It blocks nothing and nothing in the game reads it, so two players in one match can have it set differently. Direct3D 11 only.
+
 ## A sky over the map
 
 - Atmosphere, under Options, Graphics, is a new setting, off by default until it has been played. Tilt the camera flat or fly it low in a replay and EA's game ran out of world, black above the skyline and a far plane that cut the ground off in a line. With this on there is a sky, EA's own art for the map's hour, the ground far from the camera fades toward its colour, and the black ring past the map goes into the same haze. Your fog of war stays as dark as it was, the ground near the camera stays clear, and nothing moves but your camera. Your opponent's setting is his own, because no part of the game reads this. A battle of three armies and three superweapons takes the graphics card's frame from about 8.0 to 8.2 ms. Direct3D 11 only, and off under Classic Graphics.

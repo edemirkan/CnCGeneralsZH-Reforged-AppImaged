@@ -149,6 +149,7 @@ OPTION_BOOL_ACCESSORS( m_ambientOcclusion )
 OPTION_BOOL_ACCESSORS( m_weatherEffects )
 OPTION_BOOL_ACCESSORS( m_waterSplashes )
 OPTION_BOOL_ACCESSORS( m_atmosphere )
+OPTION_BOOL_ACCESSORS( m_structureCollapse )
 OPTION_BOOL_ACCESSORS( m_internalHdr )
 OPTION_INT_ACCESSORS( m_shadowQuality )
 OPTION_INT_ACCESSORS( m_graphicsQuality )
@@ -667,6 +668,14 @@ const OptionDef TheOptionCatalog[] =
 	{ "Atmosphere",								OPT_WND( "CheckAtmosphere" ), "GUI:Atmosphere",
 		OPTION_BOOL, APPLY_LIVE, 0, 1,
 		get_m_atmosphere, set_m_atmosphere },
+
+	// A building's last model goes into the ground: StructureCollapse.cpp moves a copy no drawable owns,
+	// and no sim reads it.  Off under Classic graphics and -d3d9, and no row in
+	// the quality table: an opt-in until it has been seen.  On Options > Display, under Picture: every
+	// column of Graphics and Effects is full.
+	{ "StructureCollapse",				OPT_WND( "CheckStructureCollapse" ), "GUI:StructureCollapse",
+		OPTION_BOOL, APPLY_LIVE, 0, 1,
+		get_m_structureCollapse, set_m_structureCollapse },
 
 	// What passes white keeps its colour on the way to the eight bit screen; no HDR monitor output.  The
 	// post chain is told every frame.  Classic graphics has no half float scene and -d3d9 no chain, and
