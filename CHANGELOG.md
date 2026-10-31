@@ -8,6 +8,11 @@ found and fixed, EA's own, not port damage.**
 
 ---
 
+## Shadows reach the far ground
+
+- Pull the camera right out, tilt it flat, and shadows used to stop along a line across the far ground. On Twilight Flame a whole base stood past that line with its power plants, trees and tanks on bare lit earth, each with no shadow under it. They were drawn for 2400 units round the spot you were looking at, while the far corner of that view is 3343 away. The shadows now go round what is on the screen and reach the top of it.
+- Zoomed right out at the usual tilt, the same shadow picture covers less empty ground, so a shadow's edge is about a fifth finer: 1.44 units a dot down to 1.12 on Tournament Plains. In a crowd battle at that zoom the slowest frames read 14.00 ms with the change and 14.12 without it, which is no difference at all.
+
 ## Sky above, ground below
 
 - Sky And Ground Light, under Options, Effects, is a new setting, off by default until it has been looked at on more maps. EA gave every model one flat ambient colour, so the shaded side of a tank was the same dull tone from deck to belly. Now a face looking up takes the map's ambient lifted and bluer, and a face looking down takes it lowered and warmer. By day it is quiet, since the sun does most of the lighting: a War Factory's roof reads 4% brighter and 8% bluer on Golden Oasis. On Winter Wolf that roof goes from cream to frost, 11% bluer, and on Dark Night it gains 8% while the ground beside it stays the same, so a night map stays a night map. In a battle of three armies and three superweapons the graphics card's frame reads 8.0 ms with it off and 8.15 with it on, less than two runs of one setting differ by. The ground and the batched trees keep their light, and so do the Direct3D 9 picture and Classic Graphics.
