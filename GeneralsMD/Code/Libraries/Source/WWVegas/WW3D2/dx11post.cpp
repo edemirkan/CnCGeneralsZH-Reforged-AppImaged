@@ -121,6 +121,13 @@ void DX11Post_Set_Grade(float amount)
 	GradeAmount = (amount < 0.0f) ? 0.0f : (amount > 1.0f) ? 1.0f : amount;
 }
 
+static bool InternalHdr = false;
+
+void DX11Post_Set_Internal_Hdr(bool on)
+{
+	InternalHdr = on;
+}
+
 static float HazeColour[3] = { 0.0f, 0.0f, 0.0f };
 static float HazeTop = 0.0f;
 static float HazeThickness = 1.0f;
@@ -297,6 +304,35 @@ static const char * const TONE_MAP_SHADER_BODY =
 	"float4 main(VertexOutput input) : SV_TARGET\n"
 	"{\n"
 	"    return float4(grade(tone_curve(Source.Sample(Sampler, input.Texture).rgb)), 1.0);\n"
+	"}\n";
+
+// Internal HDR Tone Mapping.  tone_curve's room runs out fast, a channel at 1.3 is within two percent
+// of white, so a fire whose channels all pass that is one flat white however hot it is.  Here a pixel
+// past white first has its whole colour scaled back, so that its brightest channel sits at one plus a
+// share of the doublings it is past white, and then takes tone_curve as any other pixel does.  The
+// ratio of its channels goes through unchanged, each doubling is a little more channel past the knee,
+// so orange climbs through yellow toward white across five or six doublings instead of half of one.
+// A pixel with no channel past white is what tone_curve made it, which away from a fire is the ground,
+// the walls and nearly all the rest of the art.  Team colour stripes do pass white, and so does what a
+// glow or the Firelight option lights past it, so those come out more coloured than they did.
+//
+// Text of its own and not in the prologue: the haze's and the occlusion's programs are keyed in the
+// shader cache by a source that takes the prologue in, and this leaves them as they were.
+#define WIDE_CURVE_TEXT \
+	"static const float WIDE_RISE = 0.3;\n" \
+	"float3 wide_curve(float3 colour)\n" \
+	"{\n" \
+	"    float peak = max(colour.r, max(colour.g, colour.b));\n" \
+	"    if (peak > 1.0) colour *= (1.0 + WIDE_RISE * log2(peak)) / peak;\n" \
+	"    return tone_curve(colour);\n" \
+	"}\n" \
+	"\n"
+
+static const char * const TONE_MAP_WIDE_SHADER_BODY =
+	WIDE_CURVE_TEXT
+	"float4 main(VertexOutput input) : SV_TARGET\n"
+	"{\n"
+	"    return float4(grade(wide_curve(Source.Sample(Sampler, input.Texture).rgb)), 1.0);\n"
 	"}\n";
 
 // FXAA, the 2009 shape of it: read the luminance of the four diagonal neighbours and the centre,
@@ -779,6 +815,15 @@ static const char * const BLOOM_COMPOSITE_SHADER_BODY =
 	"    return float4(grade(tone_curve(scene + glow * Tuning.y)), 1.0);\n"
 	"}\n";
 
+static const char * const BLOOM_COMPOSITE_WIDE_SHADER_BODY =
+	WIDE_CURVE_TEXT
+	"float4 main(VertexOutput input) : SV_TARGET\n"
+	"{\n"
+	"    float3 scene = Source.Sample(Sampler, input.Texture).rgb;\n"
+	"    float3 glow = Extra.Sample(Sampler, input.Texture).rgb;\n"
+	"    return float4(grade(wide_curve(scene + glow * Tuning.y)), 1.0);\n"
+	"}\n";
+
 // A blast bending the picture, one read per pixel whatever the number of warps: every warp adds
 // to where the pixel reads from, and the frame is sampled once at the sum.
 //
@@ -943,12 +988,14 @@ DX11PostProcessClass::DX11PostProcessClass()
 	: Device(NULL)
 	, VertexShader(NULL)
 	, ToneMapShader(NULL)
+	, ToneMapWideShader(NULL)
 	, SharpenMultisampledShader(NULL)
 	, BloomExtractShader(NULL)
 	, NearPlane(1.0f)
 	, FarPlane(1200.0f)
 	, BloomBlurShader(NULL)
 	, BloomCompositeShader(NULL)
+	, BloomCompositeWideShader(NULL)
 	, WarpShader(NULL)
 	, SceneOcclusionShader(NULL)
 	, HazeShader(NULL)
@@ -1031,9 +1078,11 @@ void DX11PostProcessClass::Shutdown()
 	}
 	release_interface(reinterpret_cast<IUnknown **>(&SceneOcclusionShader));
 	release_interface(reinterpret_cast<IUnknown **>(&WarpShader));
+	release_interface(reinterpret_cast<IUnknown **>(&BloomCompositeWideShader));
 	release_interface(reinterpret_cast<IUnknown **>(&BloomCompositeShader));
 	release_interface(reinterpret_cast<IUnknown **>(&BloomBlurShader));
 	release_interface(reinterpret_cast<IUnknown **>(&BloomExtractShader));
+	release_interface(reinterpret_cast<IUnknown **>(&ToneMapWideShader));
 	release_interface(reinterpret_cast<IUnknown **>(&ToneMapShader));
 	release_interface(reinterpret_cast<IUnknown **>(&SharpenMultisampledShader));
 	for (unsigned index = 0; index < DX11_POST_SIMPLE_EFFECTS; ++index) {
@@ -1112,12 +1161,15 @@ bool DX11PostProcessClass::Create_Shaders()
 	}
 
 	return compile_pixel_shader(compiler, device, TONE_MAP_SHADER_BODY, &ToneMapShader)
+		&& compile_pixel_shader(compiler, device, TONE_MAP_WIDE_SHADER_BODY, &ToneMapWideShader)
 		&& compile_pixel_shader(compiler, device, SHARPEN_MULTISAMPLED_SHADER_BODY,
 			&SharpenMultisampledShader)
 		&& compile_pixel_shader(compiler, device, BLOOM_EXTRACT_SHADER_BODY, &BloomExtractShader)
 		&& compile_pixel_shader(compiler, device, BLOOM_BLUR_SHADER_BODY, &BloomBlurShader)
 		&& compile_pixel_shader(compiler, device, BLOOM_COMPOSITE_SHADER_BODY,
 			&BloomCompositeShader)
+		&& compile_pixel_shader(compiler, device, BLOOM_COMPOSITE_WIDE_SHADER_BODY,
+			&BloomCompositeWideShader)
 		&& compile_pixel_shader(compiler, device, WARP_SHADER_BODY, &WarpShader)
 		&& compile_pixel_shader(compiler, device, AO_SCENE_SHADER_BODY, &SceneOcclusionShader);
 }
@@ -1707,7 +1759,7 @@ ID3D11ShaderResourceView * DX11PostProcessClass::Run_Bloom(ID3D11RenderTargetVie
 		}
 	}
 
-	pass.Shader = BloomCompositeShader;
+	pass.Shader = InternalHdr ? BloomCompositeWideShader : BloomCompositeShader;
 	pass.Source = scene;
 	pass.Extra = BloomTargets[source].Resource;
 	pass.Destination = destination;
@@ -1753,7 +1805,7 @@ bool DX11PostProcessClass::Finish(const DX11PostEffect * effects, unsigned count
 			// chain keeps its shape so turning it back on costs no rebuild of the targets.
 			PassSetup tone;
 			memset(&tone, 0, sizeof(tone));
-			tone.Shader = ToneMapShader;
+			tone.Shader = InternalHdr ? ToneMapWideShader : ToneMapShader;
 			tone.Source = scene;
 			tone.Destination = bloom_destination;
 			tone.DestinationWidth = Width;

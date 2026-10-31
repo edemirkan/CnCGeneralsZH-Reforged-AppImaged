@@ -122,6 +122,15 @@ float DX11Post_Additive_Gain();
 // does not start with bloom keeps its scene in eight bits and is never graded.
 void DX11Post_Set_Grade(float amount);
 
+// The Internal HDR Tone Mapping option: the half float scene comes down to eight bits through
+// wide_curve instead of tone_curve, wherever a match's frame does (the bloom composite and the plain
+// tone pass), so what was past white keeps its colour and its order instead of ending in one white.
+// A pixel with no channel past white comes out as it did.  Off, the default and what the tests start
+// from, runs the old programs.  The frame on the monitor is still eight bits: this is no HDR output.
+// The game sets it every frame from the option.  A chain that does not start with bloom keeps its
+// scene in eight bits and has nothing to map.
+void DX11Post_Set_Internal_Hdr(bool on);
+
 // The Warm Light option's ground haze (MapLight): a pale layer lying in the low ground,
 // laid over the opaque world before the particles out of the frame's depth taken back to world
 // height.  Top is the world height the haze thins out to nothing at, thickness how far below that
@@ -316,10 +325,12 @@ private:
 	ID3D11VertexShader * VertexShader;
 	ID3D11PixelShader * PixelShaders[DX11_POST_SIMPLE_EFFECTS];
 	ID3D11PixelShader * ToneMapShader;
+	ID3D11PixelShader * ToneMapWideShader;			// the tone pass under Internal HDR Tone Mapping
 	ID3D11PixelShader * SharpenMultisampledShader;	// the sharpen pass over a multisampled scene
 	ID3D11PixelShader * BloomExtractShader;
 	ID3D11PixelShader * BloomBlurShader;
 	ID3D11PixelShader * BloomCompositeShader;
+	ID3D11PixelShader * BloomCompositeWideShader;	// the composite under Internal HDR Tone Mapping
 	ID3D11PixelShader * WarpShader;
 	ID3D11PixelShader * SceneOcclusionShader;
 	ID3D11PixelShader * HazeShader;

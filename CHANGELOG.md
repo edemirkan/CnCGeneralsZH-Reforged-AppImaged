@@ -8,6 +8,10 @@ found and fixed, EA's own, not port damage.**
 
 ---
 
+## Fire keeps its colour
+
+- Internal HDR Tone Mapping, under Options, Effects, is a new setting, off by default until it has been played. The name is exact: the game's picture has held light past white for a long time, then squeezed nearly all of it into one white on the way out, so a Strategy Center going up was a blown patch with no shape. With this on that fireball stays orange and yellow, a night fire shows its flame tongue, and the white heart of a nuke shrinks, about 54,000 near-white pixels down to about 24,000 in the same shot. Team colours hold a little more colour, and ground lit by a blast leans more orange. Ground and walls away from a fire do not change. Your monitor still gets a normal image: an HDR screen gets no HDR signal, and no HDR screen has seen this. In a battle of three armies and three superweapons the graphics card's frame reads 7.95 ms on and 7.78 and 8.12 ms off, which is no cost anyone can measure. The Direct3D 9 picture and Classic Graphics keep the old look.
+
 ## Tanks sit on the ground
 
 - Ambient Occlusion, under Options, Effects, is a new setting, off by default until it has been played. EA gave a unit one shadow, the sun's, so on its shaded side a tank met the sand with nothing between them and read as hovering. Now the ground at the tracks of a tank on Golden Oasis loses about 40% of its light and has it all back 130 pixels out, the foot of a War Factory's wall and the crease under a turret go dark the same way, and open ground stays exactly as it was. The water and the fog of war stay out of it. In a battle of three armies and three superweapons the graphics card's frame goes from 7.9 ms to 8.2 ms. The Direct3D 9 picture and Classic Graphics keep the old look.

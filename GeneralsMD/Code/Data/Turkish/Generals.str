@@ -15925,6 +15925,14 @@ TOOLTIP:AmbientOcclusion
 "Köşeler ve bir şeyin üstünde durduğu zemin koyulaşır, böylece tank kumun üstünde uçuyormuş gibi değil kumda duruyormuş gibi görünür. Su ve savaş sisi bundan etkilenmez. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
 END
 
+GUI:InternalHdr
+"Dahili HDR Ton Eşleme"
+END
+
+TOOLTIP:InternalHdr
+"Ateş, patlama ve lazerler beyazı geçince ekrana düz beyaz olarak gelmek yerine renklerini korur, takım renkleri de rengini biraz daha iyi tutar. Ateşten uzak zemin ve duvarlar olduğu gibi kalır. Bu oyunun kendi görüntüsünün içindedir: monitörünüz yine normal görüntü alır, HDR monitöre HDR sinyali gitmez. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
+END
+
 GUI:FormationDrag
 "Sürükleyerek Düzen Kur"
 END

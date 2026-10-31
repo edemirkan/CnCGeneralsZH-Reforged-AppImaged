@@ -1139,6 +1139,7 @@ GlobalData::GlobalData()
 	m_firelight = FALSE;
 	m_hemiAmbient = FALSE;
 	m_ambientOcclusion = FALSE;
+	m_internalHdr = FALSE;
 	m_horizontalScrollSpeedFactor = 1.0;
 	m_verticalScrollSpeedFactor = 1.0;
 

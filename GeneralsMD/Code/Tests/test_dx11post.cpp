@@ -557,6 +557,64 @@ TEST(dx11post_bloom_keeps_ordinary_levels_and_folds_overbright_to_white)
 	}
 }
 
+// The blue of one whole frame of colour through the chain.  pixel_level reads the first byte of a
+// pixel, and the back buffer is blue first.
+static int frame_blue(DeviceFixture & fixture, float red, float green, float blue, bool chain)
+{
+	fixture.Get_Post().Begin_Frame();
+	ID3D11RenderTargetView * view = fixture.Get_Post().Scene_View();
+	CHECK(view != NULL);
+	const float colour[4] = { red, green, blue, 1.0f };
+	fixture.Get_Device().Get_Context()->ClearRenderTargetView(view, colour);
+	CHECK(chain ? fixture.Get_Post().Run_Chain() : fixture.Get_Post().Copy_Through());
+	unsigned pitch = 0;
+	unsigned char * result = read_back_buffer(fixture.Get_Device(), pitch);
+	CHECK(result != NULL);
+	const int level = (result != NULL) ? pixel_level(result, pitch, SURFACE_SIZE / 2, SURFACE_SIZE / 2) : -1;
+	delete [] result;
+	return level;
+}
+
+TEST(dx11post_internal_hdr_keeps_colour_past_white_and_moves_nothing_under_it)
+{
+	DeviceFixture fixture;
+	if (!fixture.Create()) {
+		printf("skip: no Direct3D 11 device on this machine\n");
+		return;
+	}
+
+	const DX11PostEffect chain[] = { DX11_POST_BLOOM };
+	fixture.Get_Post().Set_Chain(chain, 1);
+
+	// A fire at eight times white, with the option off: every channel is past the curve's room, so
+	// it arrives white, blue and all.  A pale wall under white is the off figure to hold.
+	const int offFire = frame_blue(fixture, 8.0f, 4.0f, 1.6f, true);
+	const int offWall = frame_blue(fixture, 0.95f, 0.95f, 0.9f, true);
+	CHECK_EQ(255, offFire);
+
+	DX11Post_Set_Internal_Hdr(true);
+
+	// The same fire stays orange, a hotter one is whiter than it, and white-hot still reaches white.
+	// Art under white comes out to the bit as it did.
+	const int onFire = frame_blue(fixture, 8.0f, 4.0f, 1.6f, true);
+	const int onHotter = frame_blue(fixture, 32.0f, 16.0f, 6.4f, true);
+	CHECK(onFire < 160);
+	CHECK(onHotter > onFire);
+	CHECK(frame_blue(fixture, 64.0f, 64.0f, 64.0f, true) >= 250);
+	CHECK_EQ(offWall, frame_blue(fixture, 0.95f, 0.95f, 0.9f, true));
+
+	// The plain tone pass, with the Glow option off, takes the same curve.
+	DX11Post_Set_Bloom(1.0f, 0.0f, 1.0f, 2);
+	CHECK(frame_blue(fixture, 8.0f, 4.0f, 1.6f, true) < 160);
+	DX11Post_Set_Bloom(1.0f, 1.5f, 1.0f, 2);
+
+	// A frame with no match on it, a loading screen with its interface in the scene, keeps the old one.
+	CHECK(frame_blue(fixture, 8.0f, 4.0f, 1.6f, false) >= 250);
+
+	DX11Post_Set_Internal_Hdr(false);
+	CHECK_EQ(offFire, frame_blue(fixture, 8.0f, 4.0f, 1.6f, true));
+}
+
 TEST(dx11post_bloom_spreads_light_past_the_pixels_that_carry_it)
 {
 	DeviceFixture fixture;

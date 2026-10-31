@@ -1532,6 +1532,14 @@ TOOLTIP:AmbientOcclusion
 "Corners and the ground under what stands on it go darker, so a tank sits on the sand instead of hovering over it. Water and the fog of war stay out of it. Direct3D 11 only, and off under Classic Graphics. Applies when you press Accept."
 END
 
+GUI:InternalHdr
+"Internal HDR Tone Mapping"
+END
+
+TOOLTIP:InternalHdr
+"Fire, blasts and lasers past white keep their colour on the way to your screen instead of ending in one flat white, and team colours hold a little more of theirs. Ground and walls away from a fire stay as they were. This is inside the game's picture: your monitor still gets a normal image, and an HDR monitor gets no HDR signal. Direct3D 11 only, and off under Classic Graphics. Applies when you press Accept."
+END
+
 GUI:FormationDrag
 "Drag Out A Formation"
 END
