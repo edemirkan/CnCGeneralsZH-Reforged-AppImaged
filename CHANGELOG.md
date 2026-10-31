@@ -10,7 +10,7 @@ found and fixed, EA's own, not port damage.**
 
 ## A sky over the map
 
-- Atmosphere, under Options, Graphics, is a new setting, off by default until it has been played. Tilt the camera flat or fly it low in a replay and EA's game ran out of world: black above the skyline, black past the map's edge, a far plane that cut the ground off in a line. With this on there is a sky, EA's own clouds, sunset or stars by the map's hour, the ground far from the camera fades toward its colour, and the black ring past the map goes into the same haze. Your fog of war stays as dark as it was, the ground near the camera stays clear, and nothing moves but your camera. Your opponent's setting is his own, because no part of the game reads this. A battle of three armies and three superweapons takes the graphics card's frame from about 8.0 to 8.2 ms. Direct3D 11 only, and off under Classic Graphics.
+- Atmosphere, under Options, Graphics, is a new setting, off by default until it has been played. Tilt the camera flat or fly it low in a replay and EA's game ran out of world, black above the skyline and a far plane that cut the ground off in a line. With this on there is a sky, EA's own art for the map's hour, the ground far from the camera fades toward its colour, and the black ring past the map goes into the same haze. Your fog of war stays as dark as it was, the ground near the camera stays clear, and nothing moves but your camera. Your opponent's setting is his own, because no part of the game reads this. A battle of three armies and three superweapons takes the graphics card's frame from about 8.0 to 8.2 ms. Direct3D 11 only, and off under Classic Graphics.
 
 ## Shells land in water
 
