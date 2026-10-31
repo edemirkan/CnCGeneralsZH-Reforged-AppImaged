@@ -15917,6 +15917,14 @@ TOOLTIP:HemiAmbient
 "Modeller haritanın ortam ışığını eşit almak yerine yukarıdan gökyüzünden, aşağıdan zeminden alır, böylece bir tankın üstü altından açık görünür. Duvarlar aynı ışıkta kalır, gece haritası karanlık kalır. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
 END
 
+GUI:AmbientOcclusion
+"Ortam Gölgeleme"
+END
+
+TOOLTIP:AmbientOcclusion
+"Köşeler ve bir şeyin üstünde durduğu zemin koyulaşır, böylece tank kumun üstünde uçuyormuş gibi değil kumda duruyormuş gibi görünür. Su ve savaş sisi bundan etkilenmez. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
+END
+
 GUI:FormationDrag
 "Sürükleyerek Düzen Kur"
 END

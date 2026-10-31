@@ -379,9 +379,13 @@ static void pushProtoHazeFrame(void)
 		warmth = max(min(daylight, 1.0f), 0.0f);
 	}
 	DX11Post_Set_Haze(colour, top, rise, strength, PROTO_HAZE_REACH, water, towardSun, warmth);
+}
 
-	// The fog the terrain draws, through the terrain's own mapping (ShroudTextureShader::set): the
-	// texture starts a cell before the draw origin, a texel to a cell.
+// The fog the terrain draws, through the terrain's own mapping (ShroudTextureShader::set): the
+// texture starts a cell before the draw origin, a texel to a cell.  The haze and the Ambient Occlusion
+// option read it.
+static void pushShroudFrame(void)
+{
 	W3DShroud *shroud = (TheTerrainRenderObject != NULL) ? TheTerrainRenderObject->getShroud() : NULL;
 	if (shroud != NULL && shroud->getShroudTexture() != NULL)
 	{
@@ -402,6 +406,8 @@ void W3DShaderManager::pushProtoHaze(void)
 #if defined(_WIN32)
 	if (TheGlobalData->m_mapLight && Direct3D11_Is_Active())
 		pushProtoHazeFrame();
+	if ((TheGlobalData->m_mapLight || TheGlobalData->m_ambientOcclusion) && Direct3D11_Is_Active())
+		pushShroudFrame();
 #endif
 }
 

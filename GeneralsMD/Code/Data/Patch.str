@@ -1524,6 +1524,14 @@ TOOLTIP:HemiAmbient
 "Models take the map's ambient light from the sky above and the ground below instead of evenly, so a tank's deck is lighter than its belly. Walls keep the light they had and a night map stays dark. Direct3D 11 only, and off under Classic Graphics. Applies when you press Accept."
 END
 
+GUI:AmbientOcclusion
+"Ambient Occlusion"
+END
+
+TOOLTIP:AmbientOcclusion
+"Corners and the ground under what stands on it go darker, so a tank sits on the sand instead of hovering over it. Water and the fog of war stay out of it. Direct3D 11 only, and off under Classic Graphics. Applies when you press Accept."
+END
+
 GUI:FormationDrag
 "Drag Out A Formation"
 END

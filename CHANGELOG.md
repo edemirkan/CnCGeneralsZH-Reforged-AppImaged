@@ -8,6 +8,10 @@ found and fixed, EA's own, not port damage.**
 
 ---
 
+## Tanks sit on the ground
+
+- Ambient Occlusion, under Options, Effects, is a new setting, off by default until it has been played. EA gave a unit one shadow, the sun's, so on its shaded side a tank met the sand with nothing between them and read as hovering. Now the ground at the tracks of a tank on Golden Oasis loses about 40% of its light and has it all back 130 pixels out, the foot of a War Factory's wall and the crease under a turret go dark the same way, and open ground stays exactly as it was. The water and the fog of war stay out of it. In a battle of three armies and three superweapons the graphics card's frame goes from 7.9 ms to 8.2 ms. The Direct3D 9 picture and Classic Graphics keep the old look.
+
 ## Shadows reach the far ground
 
 - Pull the camera right out, tilt it flat, and shadows used to stop along a line across the far ground. On Twilight Flame a whole base stood past that line with its power plants, trees and tanks on bare lit earth, each with no shadow under it. They were drawn for 2400 units round the spot you were looking at, while the far corner of that view is 3343 away. The shadows now go round what is on the screen and reach the top of it.

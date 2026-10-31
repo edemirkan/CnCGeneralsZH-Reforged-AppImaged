@@ -776,6 +776,34 @@ void Direct3D11_Occlude_Scene()
 	}
 }
 
+void Direct3D11_Ambient_Occlusion()
+{
+	if (!Active || !DrawEffectsAllowed || !Backend.Draws_Into_Scene()) {
+		return;
+	}
+	if (Post.Wants_World_Ao_Programs()) {
+		for (unsigned index = 0; index < DX11PostProcessClass::WORLD_AO_PROGRAMS; ++index) {
+			std::vector<unsigned char> code;
+			if (Backend.Compile_Pixel_Program(Post.World_Ao_Program_Source(index), "dx11worldao", code) && !code.empty()) {
+				Post.Load_World_Ao_Program(index, &code[0], code.size());
+			} else {
+				Post.Load_World_Ao_Program(index, NULL, 0);
+			}
+		}
+	}
+	float world_from_clip[16];
+	if (!Backend.Scene_World_From_Clip(world_from_clip)) {
+		return;
+	}
+	Backend.Resolve_Scene_Depth();
+	float projection_x = 0.0f;
+	float projection_y = 0.0f;
+	Backend.Scene_Projection_Scale(projection_x, projection_y);
+	if (Post.World_Occlude_Scene(Device.Get_Depth_Texture(), world_from_clip, projection_x, projection_y)) {
+		Backend.Resume_Scene();
+	}
+}
+
 void Direct3D11_Allow_Draw_Effects(bool allowed)
 {
 	DrawEffectsAllowed = allowed;

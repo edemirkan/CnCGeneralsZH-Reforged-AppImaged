@@ -231,6 +231,21 @@ public:
 	// The same program compiled here, past any cache, for a caller without the backend (the tests).
 	void Compile_Haze_Program();
 
+	// The Ambient Occlusion option multiplied into the scene target as it stands: half size, in world
+	// units out of the depth given, blurred, and brought back up by distance.  The scene calls it before
+	// the water and every translucent draw, so none of those takes a corner's shade.  It takes the
+	// place of the chain's "ao" that frame, whether or not the chain has one.  Projection_x and _y
+	// are the scene projection's scale on each axis.  False when it drew nothing; the caller rebinds
+	// as for Occlude_Scene.  The programs come through the backend's cache as the haze's do: three
+	// sources, and the tests compile them here.
+	bool World_Occlude_Scene(ID3D11ShaderResourceView * depth, const float world_from_clip[16],
+		float projection_x, float projection_y);
+	bool Wants_World_Ao_Programs() const;
+	const char * World_Ao_Program_Source(unsigned index) const;
+	void Load_World_Ao_Program(unsigned index, const void * bytecode, SIZE_T size);
+	void Compile_World_Ao_Programs();
+	static const unsigned WORLD_AO_PROGRAMS = 3;
+
 	// Call once at the very top of a frame, before any scene of it (a mirror's included) begins.
 	// Arms Occlude_Scene again.
 	void Open_Frame();
@@ -274,6 +289,8 @@ private:
 		bool Multiply;
 		// The pass's colour goes over what the destination holds by its alpha.
 		bool Blend;
+		// The pass reads the world's fields of the constants at b1 and the shroud at t2, as the haze does.
+		bool World;
 	};
 
 	bool Create_Shaders();
@@ -322,6 +339,8 @@ private:
 	Target SceneResolve;
 	// The scene as Occlude_Scene found it, in its format, made at that pass's first use.
 	Target SceneCopy;
+	// Half size, occlusion and distance: the two the blur goes between, made at that pass's first use.
+	Target WorldAoTargets[2];
 	Target ChainTargets[2];
 	Target BloomTargets[2];
 
@@ -348,6 +367,11 @@ private:
 	bool HazeRefused;
 	// The terrain's shroud texture under the haze, borrowed from its D3D9 texture each pass.
 	ID3D11ShaderResourceView * HazeShroudView;
+	// The Ambient Occlusion option's programs, the projection scale it was handed, and a refusal: not
+	// tried again.
+	ID3D11PixelShader * WorldAoShaders[WORLD_AO_PROGRAMS];
+	float WorldAoProjection[4];
+	bool WorldAoRefused;
 	char Diagnostic[192];
 };
 

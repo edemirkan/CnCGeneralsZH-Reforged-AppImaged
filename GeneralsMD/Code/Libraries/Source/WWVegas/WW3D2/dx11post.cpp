@@ -206,6 +206,9 @@ struct PostConstantBlock
 	float HazeSun[4];
 	// The shroud light's world rectangle (origin, one over size).
 	float HazeShroudRect[4];
+	// How the scene's projection scales x and y, for the occlusion in world units to find its reach
+	// on the screen.  Only that program declares it.
+	float WorldAoProjection[4];
 };
 
 // A triangle big enough to cover the screen, made out of nothing.  No vertex buffer and no input
@@ -468,6 +471,155 @@ static const char * const AO_SCENE_SHADER_BODY =
 	"    float bright = min(scene.r, min(scene.g, scene.b));\n"
 	"    float occlusion = occlusion_at(input) * (1.0 - smoothstep(0.7, 0.95, bright));\n"
 	"    return float4((1.0 - occlusion * AO_STRENGTH).xxx, 1.0);\n"
+	"}\n";
+
+// The Ambient Occlusion option, in three programs compiled on first use.  The depth goes back to the
+// world, so the reach is in world units and a corner reads the same at every zoom: a tank's skirt is
+// dark to the same few units of ground whether it fills the frame or is thirty pixels long.  A tap
+// that stands higher over the pixel's own surface than the bias closes off sky, weighted by how
+// steeply and fading out at the radius, so open ground and a flat roof come out untouched and a
+// tall building behind a unit's feet casts nothing on them.  The surface comes from the depth
+// itself, from whichever neighbour on each axis lies nearer, or a pixel on a silhouette would take
+// the slope between the two objects for its own.
+//
+// All of it runs at half size.  Each half size pixel reads one full size depth texel, and it keeps
+// the distance along the eye's axis beside its occlusion so the blur and the upsample need not
+// read depth again per tap.  Depth is Load, never Sample: filtered depth across a silhouette is a
+// surface nobody drew.
+#define WORLD_AO_CONSTANTS \
+	"cbuffer WorldAoConstants : register(b1)\n" \
+	"{\n" \
+	"    row_major float4x4 WorldFromClip : packoffset(c15);\n" \
+	"    float4 HazeSun : packoffset(c19);\n" \
+	"    float4 HazeShroudRect : packoffset(c20);\n" \
+	"    float4 WorldAoProjection : packoffset(c21);\n" \
+	"};\n" \
+	"Texture2D WorldAoShroud : register(t2);\n" \
+	"\n" \
+	"float eye_distance(float raw)\n" \
+	"{\n" \
+	"    return 1.0 / (raw * WorldFromClip[2][3] + WorldFromClip[3][3]);\n" \
+	"}\n" \
+	"\n"
+
+static const char * const WORLD_AO_SHADER_BODY =
+	WORLD_AO_CONSTANTS
+	"static const int AO_TAPS = 14;\n"
+	"static const float AO_RADIUS = 22.0;\n"
+	"static const float AO_MOST_PIXELS = 120.0;\n"
+	"static const float AO_BIAS = 0.12;\n"
+	"static const float AO_STRENGTH = 2.8;\n"
+	"\n"
+	"float3 world_at(int2 texel, float raw)\n"
+	"{\n"
+	"    float2 ndc = float2((texel.x + 0.5) * TexelSize.x * 2.0 - 1.0, 1.0 - (texel.y + 0.5) * TexelSize.y * 2.0);\n"
+	"    float4 world = mul(float4(ndc, raw, 1.0), WorldFromClip);\n"
+	"    return world.xyz / world.w;\n"
+	"}\n"
+	"\n"
+	// Past the frame's edge Load reads 0, the near plane, a long way off, so the slope never takes it.
+	"float3 world_of(int2 texel)\n"
+	"{\n"
+	"    return world_at(texel, Extra.Load(int3(texel, 0)).r);\n"
+	"}\n"
+	"\n"
+	"float3 shorter(float3 a, float3 b)\n"
+	"{\n"
+	"    return dot(a, a) < dot(b, b) ? a : b;\n"
+	"}\n"
+	"\n"
+	"float4 main(VertexOutput input) : SV_TARGET\n"
+	"{\n"
+	"    int2 texel = min(int2(input.Position.xy) * 2 + 1, int2(TexelSize.zw) - 1);\n"
+	"    float raw = Extra.Load(int3(texel, 0)).r;\n"
+	"    float distance_along = eye_distance(raw);\n"
+	"    if (raw >= 0.99999) return float4(1.0, distance_along, 0.0, 0.0);\n"
+	"    float3 here = world_at(texel, raw);\n"
+	"    float3 across = shorter(here - world_of(texel - int2(1, 0)), world_of(texel + int2(1, 0)) - here);\n"
+	"    float3 down = shorter(here - world_of(texel - int2(0, 1)), world_of(texel + int2(0, 1)) - here);\n"
+	"    float3 facing = normalize(cross(across, down));\n"
+	"    if (dot(facing, world_at(texel, 0.0) - here) < 0.0) facing = -facing;\n"
+	"\n"
+	"    float2 reach = AO_RADIUS * 0.5 * WorldAoProjection.xy * TexelSize.zw / distance_along;\n"
+	"    reach *= min(1.0, AO_MOST_PIXELS / reach.y);\n"
+	"    float turn = frac(52.9829189 * frac(dot(input.Position.xy, float2(0.06711056, 0.00583715)))) * 6.2831853;\n"
+	"    float closed = 0.0;\n"
+	"    for (int tap = 0; tap < AO_TAPS; ++tap)\n"
+	"    {\n"
+	"        float angle = turn + 2.39996 * (float)tap;\n"
+	"        float along = ((float)tap + 0.5) / (float)AO_TAPS;\n"
+	// A tap off the frame knows nothing and closes nothing.  Given the edge's depth instead, a tap above
+	// the frame stood over ground that recedes that way, and the whole top of the frame went dark.
+	"        int2 at = texel + int2(float2(cos(angle), sin(angle)) * reach * along);\n"
+	"        if (any(at < 0) || any(at >= int2(TexelSize.zw))) continue;\n"
+	"        float3 to = world_of(at) - here;\n"
+	"        float squared = dot(to, to);\n"
+	"        float fade = saturate(1.0 - squared / (AO_RADIUS * AO_RADIUS));\n"
+	"        closed += fade * fade * saturate(dot(to, facing) * rsqrt(squared + 0.01) - AO_BIAS);\n"
+	"    }\n"
+	"    float kept = saturate(1.0 - AO_STRENGTH * closed / (float)AO_TAPS);\n"
+	// The fog the terrain draws, as the haze reads it: under the shroud nothing, in the fog little.
+	"    float lit = lerp(1.0, WorldAoShroud.SampleLevel(Sampler, (here.xy - HazeShroudRect.xy) * HazeShroudRect.zw, 0.0).g, HazeSun.z);\n"
+	"    return float4(lerp(1.0, kept, lit * lit * lit), distance_along, 0.0, 0.0);\n"
+	"}\n";
+
+// One axis of the blur that takes the tap pattern's grain off, stopping at a change of distance so a
+// tank's dark skirt does not bleed over the roof of the tank.  What counts as a change is twenty half
+// size pixels' width on the ground, which is the same ground at every zoom and on the isometric
+// camera, whose eye stands thousands of units back with a narrow lens: there a tolerance taken as a
+// share of the distance let the skirt straight over the hull.
+static const char * const WORLD_AO_BLUR_SHADER_BODY =
+	WORLD_AO_CONSTANTS
+	"static const float WEIGHTS[5] = { 0.2, 0.18, 0.14, 0.09, 0.05 };\n"
+	"\n"
+	"float4 main(VertexOutput input) : SV_TARGET\n"
+	"{\n"
+	"    int2 texel = int2(input.Position.xy);\n"
+	"    int2 step = int2(BlurDirection.xy);\n"
+	"    float2 centre = Source.Load(int3(texel, 0)).rg;\n"
+	"    float allowed = 40.0 * centre.g / (WorldAoProjection.y * TexelSize.w);\n"
+	"    float sum = centre.r * WEIGHTS[0];\n"
+	"    float total = WEIGHTS[0];\n"
+	"    for (int index = 1; index < 5; ++index)\n"
+	"    {\n"
+	"        float2 a = Source.Load(int3(clamp(texel + step * index, int2(0, 0), int2(TexelSize.zw) - 1), 0)).rg;\n"
+	"        float2 b = Source.Load(int3(clamp(texel - step * index, int2(0, 0), int2(TexelSize.zw) - 1), 0)).rg;\n"
+	"        float weightA = WEIGHTS[index] * saturate(1.0 - abs(a.g - centre.g) / allowed);\n"
+	"        float weightB = WEIGHTS[index] * saturate(1.0 - abs(b.g - centre.g) / allowed);\n"
+	"        sum += a.r * weightA + b.r * weightB;\n"
+	"        total += weightA + weightB;\n"
+	"    }\n"
+	"    return float4(sum / total, centre.g, 0.0, 0.0);\n"
+	"}\n";
+
+// Back to full size as a factor the scene is multiplied by.  The four half size pixels round this
+// one weigh by nearness as a bilinear filter would and by how close their distance is to this
+// pixel's, with a floor: a one pixel antenna that matches none of them still gets the filter's
+// answer rather than a division by nothing.  A half size pixel holds the depth of full size texel
+// 2i+1, so its centre is at 2i+1.5, which is the 0.75 in the position.
+static const char * const WORLD_AO_UPSAMPLE_SHADER_BODY =
+	WORLD_AO_CONSTANTS
+	"float4 main(VertexOutput input) : SV_TARGET\n"
+	"{\n"
+	"    float wanted = eye_distance(Extra.Load(int3(int2(input.Position.xy), 0)).r);\n"
+	"    float allowed = 20.0 * wanted / (WorldAoProjection.y * TexelSize.w);\n"
+	"    float2 at = input.Position.xy * 0.5 - 0.75;\n"
+	"    int2 corner = max(int2(floor(at)), int2(0, 0));\n"
+	"    float2 part = saturate(at - corner);\n"
+	"    float sum = 0.0;\n"
+	"    float total = 0.0;\n"
+	"    for (int y = 0; y < 2; ++y)\n"
+	"    {\n"
+	"        for (int x = 0; x < 2; ++x)\n"
+	"        {\n"
+	"            float2 tap = Source.Load(int3(corner + int2(x, y), 0)).rg;\n"
+	"            float bilinear = (x == 1 ? part.x : 1.0 - part.x) * (y == 1 ? part.y : 1.0 - part.y);\n"
+	"            float weight = bilinear * (0.001 + saturate(1.0 - abs(tap.g - wanted) / allowed));\n"
+	"            sum += tap.r * weight;\n"
+	"            total += weight;\n"
+	"        }\n"
+	"    }\n"
+	"    return float4((sum / total).xxx, 1.0);\n"
 	"}\n";
 
 // The prototype ground haze, blended over the scene target by its alpha mid-scene, at the moment
@@ -820,8 +972,12 @@ DX11PostProcessClass::DX11PostProcessClass()
 	, Hazed(false)
 	, HazeRefused(false)
 	, HazeShroudView(NULL)
+	, WorldAoRefused(false)
 {
 	memset(HazeWorldFromClip, 0, sizeof(HazeWorldFromClip));
+	memset(WorldAoShaders, 0, sizeof(WorldAoShaders));
+	memset(WorldAoTargets, 0, sizeof(WorldAoTargets));
+	memset(WorldAoProjection, 0, sizeof(WorldAoProjection));
 	memset(PixelShaders, 0, sizeof(PixelShaders));
 	memset(&SceneTarget, 0, sizeof(SceneTarget));
 	memset(&SceneResolve, 0, sizeof(SceneResolve));
@@ -870,6 +1026,9 @@ void DX11PostProcessClass::Shutdown()
 	release_interface(reinterpret_cast<IUnknown **>(&BlendState));
 	release_interface(reinterpret_cast<IUnknown **>(&Sampler));
 	release_interface(reinterpret_cast<IUnknown **>(&HazeShader));
+	for (unsigned index = 0; index < WORLD_AO_PROGRAMS; ++index) {
+		release_interface(reinterpret_cast<IUnknown **>(&WorldAoShaders[index]));
+	}
 	release_interface(reinterpret_cast<IUnknown **>(&SceneOcclusionShader));
 	release_interface(reinterpret_cast<IUnknown **>(&WarpShader));
 	release_interface(reinterpret_cast<IUnknown **>(&BloomCompositeShader));
@@ -885,6 +1044,7 @@ void DX11PostProcessClass::Shutdown()
 	ShadersReady = false;
 	Resolved = false;
 	HazeRefused = false;
+	WorldAoRefused = false;
 }
 
 void DX11PostProcessClass::Set_Chain(const DX11PostEffect effects[DX11_POST_CHAIN_LIMIT],
@@ -1110,6 +1270,8 @@ void DX11PostProcessClass::Release_Targets()
 	Release_Target(SceneTarget);
 	Release_Target(SceneResolve);
 	Release_Target(SceneCopy);
+	Release_Target(WorldAoTargets[0]);
+	Release_Target(WorldAoTargets[1]);
 	const unsigned chain_target_count = sizeof(ChainTargets) / sizeof(ChainTargets[0]);
 	for (unsigned index = 0; index < chain_target_count; ++index) {
 		Release_Target(ChainTargets[index]);
@@ -1213,6 +1375,111 @@ void DX11PostProcessClass::Compile_Haze_Program()
 		HazeShader = NULL;
 		HazeRefused = true;
 	}
+}
+
+bool DX11PostProcessClass::Wants_World_Ao_Programs() const
+{
+	return WorldAoShaders[WORLD_AO_PROGRAMS - 1] == NULL && !WorldAoRefused && ShadersReady;
+}
+
+const char * DX11PostProcessClass::World_Ao_Program_Source(unsigned index) const
+{
+	static const std::string sources[WORLD_AO_PROGRAMS] = {
+		std::string(PIXEL_SHADER_PROLOGUE) + WORLD_AO_SHADER_BODY,
+		std::string(PIXEL_SHADER_PROLOGUE) + WORLD_AO_BLUR_SHADER_BODY,
+		std::string(PIXEL_SHADER_PROLOGUE) + WORLD_AO_UPSAMPLE_SHADER_BODY
+	};
+	return sources[index].c_str();
+}
+
+void DX11PostProcessClass::Load_World_Ao_Program(unsigned index, const void * bytecode, SIZE_T size)
+{
+	if (bytecode == NULL || FAILED(Device->Get_Device()->CreatePixelShader(bytecode, size, NULL,
+			&WorldAoShaders[index]))) {
+		WorldAoShaders[index] = NULL;
+		WorldAoRefused = true;
+	}
+}
+
+void DX11PostProcessClass::Compile_World_Ao_Programs()
+{
+	const char * const bodies[WORLD_AO_PROGRAMS] = { WORLD_AO_SHADER_BODY, WORLD_AO_BLUR_SHADER_BODY,
+		WORLD_AO_UPSAMPLE_SHADER_BODY };
+	for (unsigned index = 0; index < WORLD_AO_PROGRAMS; ++index) {
+		if (!compile_pixel_shader(compiler_function(), Device->Get_Device(), bodies[index], &WorldAoShaders[index])) {
+			WorldAoShaders[index] = NULL;
+			WorldAoRefused = true;
+		}
+	}
+}
+
+bool DX11PostProcessClass::World_Occlude_Scene(ID3D11ShaderResourceView * depth,
+	const float world_from_clip[16], float projection_x, float projection_y)
+{
+	if (Occluded || Resolved || !ShadersReady || SceneTarget.View == NULL
+			|| Device->Get_Scene_View() != SceneTarget.View || WorldAoRefused
+			|| WorldAoShaders[WORLD_AO_PROGRAMS - 1] == NULL) {
+		return false;
+	}
+	const unsigned half_width = (Width + 1) / 2;
+	const unsigned half_height = (Height + 1) / 2;
+	if (WorldAoTargets[0].Texture == NULL
+			&& (!Create_Target(WorldAoTargets[0], half_width, half_height, DXGI_FORMAT_R32G32_FLOAT)
+				|| !Create_Target(WorldAoTargets[1], half_width, half_height, DXGI_FORMAT_R32G32_FLOAT))) {
+		Release_Target(WorldAoTargets[0]);
+		Release_Target(WorldAoTargets[1]);
+		return false;
+	}
+	memcpy(HazeWorldFromClip, world_from_clip, sizeof(HazeWorldFromClip));
+	WorldAoProjection[0] = projection_x;
+	WorldAoProjection[1] = projection_y;
+	// Read and left for the haze, which comes later in the same frame and takes it for good.
+	HazeShroudView = HazeShroudSource;
+
+	PassSetup pass;
+	memset(&pass, 0, sizeof(pass));
+	pass.Shader = WorldAoShaders[0];
+	pass.Extra = depth;
+	pass.World = true;
+	pass.Destination = WorldAoTargets[0].View;
+	pass.DestinationWidth = half_width;
+	pass.DestinationHeight = half_height;
+	pass.SourceWidth = Width;
+	pass.SourceHeight = Height;
+	Draw_Pass(pass);
+
+	memset(&pass, 0, sizeof(pass));
+	pass.Shader = WorldAoShaders[1];
+	pass.World = true;
+	pass.Source = WorldAoTargets[0].Resource;
+	pass.Destination = WorldAoTargets[1].View;
+	pass.DestinationWidth = half_width;
+	pass.DestinationHeight = half_height;
+	pass.SourceWidth = half_width;
+	pass.SourceHeight = half_height;
+	pass.BlurX = 1.0f;
+	Draw_Pass(pass);
+
+	pass.Source = WorldAoTargets[1].Resource;
+	pass.Destination = WorldAoTargets[0].View;
+	pass.BlurX = 0.0f;
+	pass.BlurY = 1.0f;
+	Draw_Pass(pass);
+
+	memset(&pass, 0, sizeof(pass));
+	pass.Shader = WorldAoShaders[2];
+	pass.Source = WorldAoTargets[0].Resource;
+	pass.Extra = depth;
+	pass.World = true;
+	pass.Multiply = true;
+	pass.Destination = SceneTarget.View;
+	pass.DestinationWidth = Width;
+	pass.DestinationHeight = Height;
+	pass.SourceWidth = half_width;
+	pass.SourceHeight = half_height;
+	Draw_Pass(pass);
+	Occluded = true;
+	return true;
 }
 
 bool DX11PostProcessClass::Haze_Scene(ID3D11ShaderResourceView * depth,
@@ -1347,6 +1614,7 @@ void DX11PostProcessClass::Draw_Pass(const PassSetup & pass)
 	// the program reads only the sun's bearing, so its z says whether a shroud texture is bound
 	block.HazeSun[2] = (HazeShroudView != NULL) ? 1.0f : 0.0f;
 	memcpy(block.HazeShroudRect, HazeShroudRect, sizeof(block.HazeShroudRect));
+	memcpy(block.WorldAoProjection, WorldAoProjection, sizeof(block.WorldAoProjection));
 	memcpy(mapped.pData, &block, sizeof(block));
 	context->Unmap(ConstantBuffer, 0);
 
@@ -1377,7 +1645,7 @@ void DX11PostProcessClass::Draw_Pass(const PassSetup & pass)
 	ID3D11ShaderResourceView * resources[2] = { pass.Source, pass.Extra };
 	context->PSSetShaderResources(0, 2, resources);
 	context->PSSetConstantBuffers(0, 1, &ConstantBuffer);
-	const bool haze = (pass.Shader == HazeShader);
+	const bool haze = pass.World || pass.Shader == HazeShader;
 	if (haze) {
 		// The same buffer at b1 as well, where the haze program reads its own fields of it, and
 		// the shroud at t2.

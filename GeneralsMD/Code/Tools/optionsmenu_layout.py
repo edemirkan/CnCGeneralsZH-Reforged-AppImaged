@@ -241,6 +241,7 @@ NEW_CONTROLS = [
     (CHECK,  "CheckGroundMarks",       "GUI:GroundMarks"),
     (CHECK,  "CheckFirelight",         "GUI:Firelight"),
     (CHECK,  "CheckHemiAmbient",       "GUI:HemiAmbient"),
+    (CHECK,  "CheckAmbientOcclusion",  "GUI:AmbientOcclusion"),
     (LABEL,  "LabelGraphicsQuality",   "GUI:GraphicsQuality"),
     (SLIDER, "SliderGraphicsQuality",  None),
 ]
@@ -382,6 +383,7 @@ GROUP_LAYOUT = [
             ("check", "CheckWaterFoam"),
             ("check", "CheckGroundMarks"),
             ("check", "CheckHemiAmbient"),
+            ("check", "CheckAmbientOcclusion"),
             ("check", "CheckExtraAnimations"),
             ("check", "CheckTreeSway"),
             ("check", "CheckBehindBuilding")]),

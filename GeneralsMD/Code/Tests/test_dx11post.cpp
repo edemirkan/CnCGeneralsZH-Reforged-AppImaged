@@ -740,3 +740,79 @@ TEST(dx11post_the_ground_haze_lies_over_a_scene_under_its_top)
 		delete [] result;
 	}
 }
+
+// The Ambient Occlusion option drawn for real over a white scene.  The world is the clip space times
+// forty across and a thousand deep, so the frame is 80 units across at 0.8 of a pixel a unit, the left
+// half stands 10 units nearer the eye than the right, and the near plane, which a tap past the frame's
+// edge reads, is out of reach.  The floor at that step's foot goes dark; the floor past the reach and
+// the top of the step stay exactly white, and the chain's own "ao" stands down.
+TEST(dx11post_world_occlusion_darkens_the_foot_of_a_step_and_nothing_else)
+{
+	DeviceFixture fixture;
+	if (!fixture.Create()) {
+		printf("skip: no Direct3D 11 device on this machine\n");
+		return;
+	}
+
+	const float FLOOR_DEPTH = 0.5f;
+	const float TOP_DEPTH = 0.49f;
+	const float UNITS_DEEP = 1000.0f;
+	const float UNITS_A_CLIP = 40.0f;
+	const float PROJECTION_SCALE = 1.0f / UNITS_A_CLIP;
+	const unsigned char DARKENED_BY_AT_LEAST = 10;
+	DX11DeviceClass & device = fixture.Get_Device();
+	DX11PostProcessClass & post = fixture.Get_Post();
+
+	float depth[SURFACE_SIZE * SURFACE_SIZE];
+	for (unsigned y = 0; y < SURFACE_SIZE; ++y) {
+		for (unsigned x = 0; x < SURFACE_SIZE; ++x) {
+			depth[y * SURFACE_SIZE + x] = (x < SURFACE_SIZE / 2) ? TOP_DEPTH : FLOOR_DEPTH;
+		}
+	}
+	D3D11_TEXTURE2D_DESC description;
+	ZeroMemory(&description, sizeof(description));
+	description.Width = SURFACE_SIZE;
+	description.Height = SURFACE_SIZE;
+	description.MipLevels = 1;
+	description.ArraySize = 1;
+	description.Format = DXGI_FORMAT_R32_FLOAT;
+	description.SampleDesc.Count = 1;
+	description.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	D3D11_SUBRESOURCE_DATA initial;
+	ZeroMemory(&initial, sizeof(initial));
+	initial.pSysMem = depth;
+	initial.SysMemPitch = SURFACE_SIZE * sizeof(float);
+	ID3D11Texture2D * texture = NULL;
+	ID3D11ShaderResourceView * view = NULL;
+	CHECK(SUCCEEDED(device.Get_Device()->CreateTexture2D(&description, &initial, &texture)));
+	CHECK(SUCCEEDED(device.Get_Device()->CreateShaderResourceView(texture, NULL, &view)));
+
+	unsigned char picture[SURFACE_SIZE * SURFACE_SIZE * BYTES_A_PIXEL];
+	fill_flat(picture, LIGHT_LEVEL);
+	const DX11PostEffect ao_only[] = { DX11_POST_AO };
+	post.Set_Chain(ao_only, 1);
+	post.Compile_World_Ao_Programs();
+	post.Open_Frame();
+	post.Begin_Frame();
+	device.Set_Scene_View(post.Scene_View());
+	const float world_from_clip[16] = {
+		UNITS_A_CLIP, 0.0f, 0.0f, 0.0f, 0.0f, UNITS_A_CLIP, 0.0f, 0.0f, 0.0f, 0.0f, UNITS_DEEP, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+	const bool drawn = write_scene(device, post, picture)
+		&& post.World_Occlude_Scene(view, world_from_clip, PROJECTION_SCALE, PROJECTION_SCALE);
+	CHECK(drawn);
+	CHECK(!post.Occlude_Scene(device.Get_Depth_Texture()));
+	CHECK(post.Run_Chain());
+	device.Set_Scene_View(NULL);
+
+	unsigned pitch = 0;
+	unsigned char * result = drawn ? read_back_buffer(device, pitch) : NULL;
+	CHECK(result != NULL);
+	if (result != NULL) {
+		CHECK(pixel_level(result, pitch, SURFACE_SIZE / 2 + 2, SURFACE_SIZE / 2) <= LIGHT_LEVEL - DARKENED_BY_AT_LEAST);
+		CHECK_EQ((unsigned)LIGHT_LEVEL, (unsigned)pixel_level(result, pitch, SURFACE_SIZE - 3, SURFACE_SIZE / 2));
+		CHECK_EQ((unsigned)LIGHT_LEVEL, (unsigned)pixel_level(result, pitch, 3, SURFACE_SIZE / 2));
+		delete [] result;
+	}
+	view->Release();
+	texture->Release();
+}

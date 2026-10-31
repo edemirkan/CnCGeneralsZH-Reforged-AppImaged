@@ -267,6 +267,11 @@ unsigned Direct3D11_Requested_Draw_Effect(float parameters[4]);
 // Nothing happens without "ao" in the chain or while a filter or a mirror holds the target.
 void Direct3D11_Occlude_Scene();
 
+// The Ambient Occlusion option (DX11PostProcessClass::World_Occlude_Scene), called once the opaque world
+// is down and before the water.  The chain's own occlusion stands down for the frame.  -d3d9, Classic
+// graphics, -headless and the SDL3 port draw nothing here.
+void Direct3D11_Ambient_Occlusion();
+
 // Whether the draws that follow take the Glow option's additive gain (DX11BackendClass::
 // Set_Glow_Draw).  ShaderClass::Apply sends it from the shader's GLOW_ENABLE bit.
 void Direct3D11_Set_Glow_Draw(bool glow);

@@ -379,6 +379,8 @@ public:
 	// haze).  False when Set_Scene_View has not run since Open_Frame, when that projection is not a
 	// perspective one or the matrix has no inverse.
 	bool Scene_World_From_Clip(float world_from_clip[16]) const;
+	// How that projection scales x and y: a world unit at eye distance d is x / d and y / d of half the frame.
+	void Scene_Projection_Scale(float & x, float & y) const { x = SceneProjection[0]; y = SceneProjection[5]; }
 	// The top of a frame, before any scene of it: Scene_World_From_Clip waits for this frame's view.
 	void Open_Frame();
 
