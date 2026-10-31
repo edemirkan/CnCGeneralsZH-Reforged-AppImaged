@@ -15941,6 +15941,14 @@ TOOLTIP:Weather
 "Yağmur yağar, çöl haritasında kum, karlı haritada kar savrulur; rüzgâr ağaçları büker, dumanı yana yatırır. Kendi yağmuru ya da karı olan harita onu korur, yalnızca rüzgârı alır. Değişen sadece sizin görüntünüzdür: birliklerin gördüğü ve vurduğu aynı kalır, diğer oyuncular kendi ayarını görür. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
 END
 
+GUI:WaterSplashes
+"Su Sıçramaları"
+END
+
+TOOLTIP:WaterSplashes
+"Suya düşen mermi, bomba ya da ceset su sıçratır ve yüzeyde halkalar yayar. Değişen sadece sizin görüntünüzdür: oyunda hiçbir şey bunu okumaz, diğer oyuncular kendi ayarını görür. Yalnızca Direct3D 11 ve Klasik su ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
+END
+
 GUI:FormationDrag
 "Sürükleyerek Düzen Kur"
 END

@@ -525,7 +525,7 @@ public:
 	{
 	}
 
-	virtual Real blastMarkRadius() const { return -1.0f; }
+	virtual Real blastMarkRadius() const { return -max(m_radius, 1.0f); }
 
 	virtual void doFXPos(const Coord3D *primary, const Matrix3D* /*primaryMtx*/, const Real /*primarySpeed*/, const Coord3D * /*secondary*/, const Real /*overrideRadius*/ ) const
 	{
@@ -899,7 +899,7 @@ static const FieldParse TheFXListFieldParse[] =
 };
 
 //-------------------------------------------------------------------------------------------------
-FXList::FXList() : m_markRadius(0.0f)
+FXList::FXList() : m_markRadius(0.0f), m_splashRadius(0.0f)
 {
 }
 
@@ -919,38 +919,39 @@ void FXList::clear()
 	}
 	m_nuggets.clear();
 	m_markRadius = 0.0f;
+	m_splashRadius = 0.0f;
 }
 
 //-------------------------------------------------------------------------------------------------
 /** Which lists are a blast that marks the ground goes by name, there being nothing else that says
 	* so: a muzzle flash shakes the view as hard as a shell landing, and only fifty lists scorch on
 	* their own, none of them a tank shell or a missile.  Client only, read once at parse, and no INI
-	* line changes.  A list that scorches already keeps that and takes no burn on top. */
+	* line changes.  A list that scorches already keeps that and takes no burn on top.  Water Splashes
+	* takes every blast the name says and every list that scorches: the names a burn leaves out still
+	* throw water up, and a nuke goes by no blast's name.  How high it lands is asked where it lands. */
 //-------------------------------------------------------------------------------------------------
 void FXList::noteBlastByName(const char *name)
 {
 	static const char *const blasts[] = { "Detonation", "Explosion", "Explode", "Impact", "HitsGround", "HitGround", "Blast", "Crash" };
 	static const char *const notBurns[] = { "Toxin", "Anthrax", "EMP", "Bio", "Cleanup", "Garrison", "Disguise", "FlashBang", "Patriot", "Stinger", "Spill" };
 
-	m_markRadius = 0.0f;
 	Bool isBlast = FALSE;
 	for (size_t i = 0; i < ARRAY_SIZE(blasts); ++i)
 		isBlast = isBlast || strstr(name, blasts[i]) != NULL;
+	Bool burns = isBlast;
 	for (size_t i = 0; i < ARRAY_SIZE(notBurns); ++i)
-		isBlast = isBlast && strstr(name, notBurns[i]) == NULL;
-	if (!isBlast)
-		return;
+		burns = burns && strstr(name, notBurns[i]) == NULL;
 
 	Real radius = 10.0f;
+	Bool scorches = FALSE;
 	for (FXNuggetList::const_iterator it = m_nuggets.begin(); it != m_nuggets.end(); ++it)
 	{
 		const Real asked = (*it)->blastMarkRadius();
-		if (asked < 0.0f)
-			return;
-		if (asked > radius)
-			radius = asked;
+		scorches = scorches || asked < 0.0f;
+		radius = max(radius, (Real)fabs(asked));
 	}
-	m_markRadius = radius;
+	m_markRadius = burns && !scorches ? radius : 0.0f;
+	m_splashRadius = isBlast || scorches ? radius : 0.0f;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1000,6 +1001,8 @@ void FXList::doFXPosNow(const Coord3D *primary, const Matrix3D* primaryMtx, cons
 		(*it)->doFXPos(primary, primaryMtx, primarySpeed, secondary, overrideRadius);
 	}
 	leaveBlastMark(primary);
+	if (m_splashRadius > 0.0f)
+		TheGameClient->splashInWater(primary, m_splashRadius);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1067,7 +1070,11 @@ void FXList::doFXObjNow(const FXObjectView* primary, const FXObjectView* seconda
 		(*it)->doFXObj(primary, secondary);
 	}
 	if (primary)
+	{
 		leaveBlastMark(&primary->position);
+		if (m_splashRadius > 0.0f)
+			TheGameClient->splashInWater(&primary->position, m_splashRadius);
+	}
 }
 
 

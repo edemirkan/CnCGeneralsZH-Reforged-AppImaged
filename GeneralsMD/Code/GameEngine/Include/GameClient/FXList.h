@@ -113,7 +113,7 @@ public:
 	*/
 	virtual void doFXObj(const FXObjectView* primary, const FXObjectView* secondary = NULL) const;
 
-	/// How wide a burn this nugget's blast asks for under Battle Marks: 0 has no say, below 0 scorches the ground itself.
+	/// How wide a burn this nugget's blast asks for under Battle Marks: 0 has no say, below 0 scorches the ground itself, as wide as the value's size.
 	virtual Real blastMarkRadius() const { return 0.0f; }
 
 private:
@@ -172,10 +172,14 @@ public:
 	{
 		m_nuggets.swap(that.m_nuggets);
 		std::swap(m_markRadius, that.m_markRadius);
+		std::swap(m_splashRadius, that.m_splashRadius);
 	}
 
-	/// Battle Marks: told the list's name once it is parsed, decides whether it is a blast on the ground.
+	/// Battle Marks and Water Splashes: told the list's name once it is parsed, decides whether it is a blast on the ground.
 	void noteBlastByName(const char *name);
+
+	/// How wide this list splashes in water under Water Splashes, 0 for not at all.
+	Real getSplashRadius() const { return m_splashRadius; }
 
 	/// inline convenience method to avoid having to check for null.
 	inline static void doFXPos(const FXList* fx, const Coord3D *primary, const Matrix3D* primaryMtx = NULL, const Real primarySpeed = 0.0f, const Coord3D *secondary = NULL, const Real overrideRadius = 0.0f)
@@ -224,6 +228,7 @@ private:
 
 	FXNuggetList m_nuggets;
 	Real m_markRadius;	///< the burn this list leaves on the ground under Battle Marks, 0 for none
+	Real m_splashRadius;	///< how wide it splashes in water under Water Splashes, 0 for not at all
 
 };  
 

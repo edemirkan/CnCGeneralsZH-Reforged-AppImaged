@@ -1292,6 +1292,33 @@ TEST(armor_skips_an_unknown_damage_type)
 	remove( TEST_INI );
 }
 
+/* Water Splashes goes by the same names as Battle Marks and takes every list that scorches, a nuke's
+	 among them, whatever its name; a muzzle flash shakes the view and splashes nothing. */
+TEST(water_splashes_take_blasts_by_name_and_every_list_that_scorches)
+{
+	CHECK( bootOnce() );
+	if( TheFXListStore == NULL )
+		TheFXListStore = NEW FXListStore;
+
+	writeFile( TEST_INI,
+		"FXList SplashTest_ShellDetonation\r\n"
+		"End\r\n"
+		"FXList SplashTest_Muzzle\r\n"
+		"End\r\n"
+		"FXList SplashTest_Nuke\r\n"
+		"  TerrainScorch\r\n"
+		"    Type = RANDOM\r\n"
+		"    Radius = 120\r\n"
+		"  End\r\n"
+		"End\r\n" );
+	CHECK( loadIni( TEST_INI ) );
+	remove( TEST_INI );
+
+	CHECK_NEAR( TheFXListStore->findFXList( "SplashTest_ShellDetonation" )->getSplashRadius(), 10.0f, 0.01f );
+	CHECK_NEAR( TheFXListStore->findFXList( "SplashTest_Muzzle" )->getSplashRadius(), 0.0f, 0.01f );
+	CHECK_NEAR( TheFXListStore->findFXList( "SplashTest_Nuke" )->getSplashRadius(), 120.0f, 0.01f );
+}
+
 /* Data\INI\FXListReforged.ini is the fork's own explosion light: 89 of EA's FXLists, each repeated
 	 whole with one LightPulse added.  Whole, because FXListStore::parseFXListDefinition clears an
 	 entry before re-reading it - a half-copied block does not add a light, it deletes an explosion.

@@ -1548,6 +1548,14 @@ TOOLTIP:Weather
 "Rain falls, or sand blows on a desert map and snow on a snowy one, and a wind bends the trees and leans the smoke. A map with its own rain or snow keeps it and takes only the wind. Only your picture changes: what units see and hit stays the same, and other players see their own setting. Direct3D 11 only, and off under Classic Graphics. Applies when you press Accept."
 END
 
+GUI:WaterSplashes
+"Water Splashes"
+END
+
+TOOLTIP:WaterSplashes
+"A shell, a bomb or a falling body that comes down in water throws up a splash and sends rings across the surface. Only your picture changes: nothing in the game reads it, and other players see their own setting. Direct3D 11 and Classic water only, and off under Classic Graphics. Applies when you press Accept."
+END
+
 GUI:FormationDrag
 "Drag Out A Formation"
 END

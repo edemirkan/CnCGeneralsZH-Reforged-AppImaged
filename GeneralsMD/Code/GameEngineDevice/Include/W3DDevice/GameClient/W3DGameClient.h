@@ -94,6 +94,7 @@ public:
 	virtual void addScorch(const Coord3D *pos, Real radius, Scorches type);
 	virtual void addGroundMark(const Coord3D *pos, Real radius, Int type);
 	virtual void structureFell(const Coord3D *pos, Real radius);
+	virtual void splashInWater(const Coord3D *pos, Real radius);
 	virtual void createRayEffectByTemplate( const Coord3D *start, const Coord3D *end, const ThingTemplate* tmpl );  ///< create effect needing start and end location
 	//virtual Bool getBonePos(Drawable *draw, AsciiString boneName, Coord3D* pos, Matrix3D* transform) const;
 

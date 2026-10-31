@@ -53,6 +53,7 @@
 #include "GameClient/RayEffect.h"
 #include "GameLogic/GameLogic.h"
 #include "GameLogic/Object.h"
+#include "GameLogic/TerrainLogic.h"
 #include "GameClient/View.h"
 #include "WW3D2/dx11runtime.h"
 #include "W3DDevice/GameClient/W3DAssetManager.h"
@@ -184,6 +185,66 @@ void W3DGameClient::structureFell(const Coord3D *pos, Real radius)
 	const Real JOLT_FROM_RADIUS = 40.0f;
 	if (radius >= JOLT_FROM_RADIUS && TheTacticalView && !TheGlobalData->m_classicGraphics && Direct3D11_Present_Is_Enabled())
 		TheTacticalView->shake(pos, View::SHAKE_STRONG);
+}
+
+//-------------------------------------------------------------------------------------------------
+/** The Water Splashes option: a blast or a falling body came down at pos.  In water it throws a splash
+	* and, where the water has depth, foam and rings, sized by radius, from the surface.
+	* ParticleSystemReforged.ini holds the systems, outside the multiplayer checksum.  Classic Graphics
+	* and Direct3D 9 keep EA's water, and the Modern water style its own foam. */
+//-------------------------------------------------------------------------------------------------
+void W3DGameClient::splashInWater(const Coord3D *pos, Real radius)
+{
+	if (!TheGlobalData->m_waterSplashes || TheGlobalData->m_classicGraphics || TheGlobalData->m_waterStyle != 0 || !Direct3D11_Present_Is_Enabled())
+		return;
+	const Coord3D at = *pos;
+	LOGIC_AFTER_TICK( [=]() { splashInWater( &at, radius ); } );
+
+	// any higher is a blast in the air; at or under the surface is what lands, since a shell comes down on
+	// the bed.  The surface, not the bed, is where the water shows.
+	const Real MAX_HEIGHT_OVER_WATER = 10.0f;
+	Real waterZ, bedZ;
+	if (!TheTerrainLogic->isUnderwater(pos->x, pos->y, &waterZ, &bedZ) || pos->z > waterZ + MAX_HEIGHT_OVER_WATER)
+		return;
+	if (pos->z > waterZ && TheTerrainLogic->findBridgeAt(pos) != NULL)
+		return;
+	if (ThePartitionManager->getShroudStatusForPlayer(TheObserverCamera.getShroudPlayerIndex(), pos) != CELLSHROUD_CLEAR)
+		return;
+
+	// the systems' colours are a day's: a night's splash takes how bright the map's light is, not its
+	// colour, which on a night map is deep blue
+	const GlobalData::TerrainLighting &light = TheGlobalData->m_terrainLighting[TheGlobalData->m_timeOfDay][0];
+	const Real bright = min(0.3f * (light.ambient.red + light.diffuse.red)
+		+ 0.59f * (light.ambient.green + light.diffuse.green)
+		+ 0.11f * (light.ambient.blue + light.diffuse.blue), 1.0f);
+
+	// Flat layers want a real surface under them: on the sand at the water's edge they read as glass laid
+	// on a beach.  A channel's open water is only 2 deep on the maps measured (Flash Effect, Dark Night)
+	// and that edge 0.1.  A piece of debris or the shell itself coming down, radius 1, throws spray alone.
+	const Real MIN_DEPTH_FOR_RINGS = 1.0f;
+	const Real MIN_RADIUS_FOR_RINGS = 3.0f;
+	static const char *const layers[] = { "WaterSplashThrow", "WaterSplashFoam", "WaterSplashRing", "WaterSplashRingLate" };
+	const size_t layerCount = waterZ - bedZ < MIN_DEPTH_FOR_RINGS || radius < MIN_RADIUS_FOR_RINGS ? 1 : ARRAY_SIZE(layers);
+
+	const Real scale = WWMath::Clamp(radius / 15.0f, 0.25f, 4.0f);
+	const Coord3D surface = { pos->x, pos->y, waterZ };
+	const Coord3D velocity = { scale, scale, scale };
+	for (size_t i = 0; i < layerCount; ++i)
+	{
+		ParticleSystem *sys = TheParticleSystemManager->createParticleSystem(TheParticleSystemManager->findTemplate(layers[i]));
+		if (sys == NULL)
+			continue;
+		sys->setPosition(&surface);
+		sys->setSizeMultiplier(scale);
+		sys->setVelocityMultiplier(&velocity);
+		// every key, the first too: tintAllColors leaves that one, and a particle overshoots its rate to the next
+		for (Int key = 0; key < MAX_KEYFRAMES; ++key)
+		{
+			sys->m_colorKey[key].color.red *= bright;
+			sys->m_colorKey[key].color.green *= bright;
+			sys->m_colorKey[key].color.blue *= bright;
+		}
+	}
 }
 
 //-------------------------------------------------------------------------------------------------
