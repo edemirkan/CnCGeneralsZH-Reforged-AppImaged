@@ -243,6 +243,7 @@ NEW_CONTROLS = [
     (CHECK,  "CheckHemiAmbient",       "GUI:HemiAmbient"),
     (CHECK,  "CheckAmbientOcclusion",  "GUI:AmbientOcclusion"),
     (CHECK,  "CheckInternalHdr",       "GUI:InternalHdr"),
+    (CHECK,  "CheckWeather",           "GUI:Weather"),
     (LABEL,  "LabelGraphicsQuality",   "GUI:GraphicsQuality"),
     (SLIDER, "SliderGraphicsQuality",  None),
 ]
@@ -395,7 +396,8 @@ GROUP_LAYOUT = [
             ("check", "CheckParticleBounce"),
             ("check", "CheckSmokeFireLighting"),
             ("check", "CheckFirelight"),
-            ("check", "CheckDebrisTrails")])]),
+            ("check", "CheckDebrisTrails"),
+            ("check", "CheckWeather")])]),
 
     ("PageAudio", [
         ("GUI:OptionsGroupVolume", [

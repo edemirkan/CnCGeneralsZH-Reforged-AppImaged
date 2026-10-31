@@ -2677,6 +2677,10 @@ UnsignedInt W3DParticleSystemManager::gpuSlotFor( ParticleSystem *system )
 		taken.reuseFrame = 0;
 		ParticleGpuSystemEntry &entry = m_gpuEntries[ slot ];
 		particleGpuSystemEntryBuild( *system, &entry );
+		// taken once a slot, so the Weather option switched in a match reaches the systems made after it
+		const Coord3D drift = system->getDriftWithWeather();
+		entry.m_drift[ 0 ] = drift.x;
+		entry.m_drift[ 1 ] = drift.y;
 		entry.m_textureSlice = slice;
 		entry.m_flags = PARTICLE_GPU_ALIVE | ( system->isGpuGroundClamped() ? PARTICLE_GPU_GROUND_CLAMPED : 0u );
 		// the fade is taken at the sync point (refreshGpuSystems), which runs before the next draw

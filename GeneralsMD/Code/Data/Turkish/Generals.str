@@ -15933,6 +15933,14 @@ TOOLTIP:InternalHdr
 "Ateş, patlama ve lazerler beyazı geçince ekrana düz beyaz olarak gelmek yerine renklerini korur, takım renkleri de rengini biraz daha iyi tutar. Ateşten uzak zemin ve duvarlar olduğu gibi kalır. Bu oyunun kendi görüntüsünün içindedir: monitörünüz yine normal görüntü alır, HDR monitöre HDR sinyali gitmez. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
 END
 
+GUI:Weather
+"Hava Durumu"
+END
+
+TOOLTIP:Weather
+"Yağmur yağar, çöl haritasında kum, karlı haritada kar savrulur; rüzgâr ağaçları büker, dumanı yana yatırır. Kendi yağmuru ya da karı olan harita onu korur, yalnızca rüzgârı alır. Değişen sadece sizin görüntünüzdür: birliklerin gördüğü ve vurduğu aynı kalır, diğer oyuncular kendi ayarını görür. Yalnızca Direct3D 11 ile, Klasik Grafikler açıkken kapalıdır. Kabul Et'e basınca uygulanır."
+END
+
 GUI:FormationDrag
 "Sürükleyerek Düzen Kur"
 END

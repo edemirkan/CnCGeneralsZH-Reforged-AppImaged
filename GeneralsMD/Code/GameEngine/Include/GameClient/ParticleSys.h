@@ -714,6 +714,7 @@ public:
   void setSkipParentXfrm(Bool enable) { m_skipParentXfrm = enable; } ///<disable transforming particle system with parent matrix.
 		
 	const Coord3D *getDriftVelocity( void ) { return &m_driftVelocity; }	///< get the drift velocity of the system
+	Coord3D getDriftWithWeather( void ) const;	///< that, plus the Weather option's wind on what it leans
 	Bool isGroundCollision( void ) const { return m_groundCollision; }		///< do this system's particles hit the terrain?
 	Real getGroundBounce( void ) const { return m_groundBounce; }				///< restitution against the terrain
 	Real getGroundFriction( void ) const { return m_groundFriction; }		///< drag along the terrain

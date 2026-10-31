@@ -146,6 +146,7 @@ OPTION_BOOL_ACCESSORS( m_groundMarks )
 OPTION_BOOL_ACCESSORS( m_firelight )
 OPTION_BOOL_ACCESSORS( m_hemiAmbient )
 OPTION_BOOL_ACCESSORS( m_ambientOcclusion )
+OPTION_BOOL_ACCESSORS( m_weatherEffects )
 OPTION_BOOL_ACCESSORS( m_internalHdr )
 OPTION_INT_ACCESSORS( m_shadowQuality )
 OPTION_INT_ACCESSORS( m_graphicsQuality )
@@ -643,6 +644,13 @@ const OptionDef TheOptionCatalog[] =
 	{ "AmbientOcclusion",					OPT_WND( "CheckAmbientOcclusion" ), "GUI:AmbientOcclusion",
 		OPTION_BOOL, APPLY_LIVE, 0, 1,
 		get_m_ambientOcclusion, set_m_ambientOcclusion },
+
+	// Rain, blowing sand or snow by the map's ground, and a wind on trees and smoke.  Read every frame, and
+	// no sim reads it, so two players may differ.  Off under Classic graphics and -d3d9, and no row in the
+	// quality table: an opt-in until it has been seen.  On Options > Effects.
+	{ "Weather",							OPT_WND( "CheckWeather" ), "GUI:Weather",
+		OPTION_BOOL, APPLY_LIVE, 0, 1,
+		get_m_weatherEffects, set_m_weatherEffects },
 
 	// What passes white keeps its colour on the way to the eight bit screen; no HDR monitor output.  The
 	// post chain is told every frame.  Classic graphics has no half float scene and -d3d9 no chain, and

@@ -710,6 +710,7 @@ public:
 	Bool m_firelight;								///< "Firelight": flames light the ground, walls and units around them (Direct3D 11, client only)
 	Bool m_hemiAmbient;							///< "HemiAmbient": models take the ambient from the sky above and the ground below (Direct3D 11, client only)
 	Bool m_ambientOcclusion;				///< "AmbientOcclusion": corners and the ground under what stands on it darken, half size in world units (Direct3D 11, client only)
+	Bool m_weatherEffects;					///< "Weather": rain, blowing sand or snow by the map's ground, and a wind on trees and smoke (Direct3D 11, client only)
 	Bool m_internalHdr;							///< "InternalHdr": what passes white in the half float scene keeps its colour on the way to eight bits; no HDR monitor output (Direct3D 11, client only)
 
 	Int m_maxParticleCount;						///< maximum number of particles that can exist

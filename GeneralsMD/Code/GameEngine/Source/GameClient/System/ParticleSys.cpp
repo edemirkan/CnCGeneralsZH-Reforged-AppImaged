@@ -53,6 +53,7 @@
 #include "GameClient/InGameUI.h"
 #include "GameClient/ParticleSys.h"
 #include "GameClient/Shadow.h"
+#include "GameClient/Snow.h"
 
 #include "GameLogic/GameLogic.h"
 #include "GameLogic/Object.h"
@@ -2627,9 +2628,24 @@ Bool ParticleSystem::updateEmission( Int localPlayerIndex, Bool *keepSystem )
 // ------------------------------------------------------------------------------------------------
 /** What every particle of this system reads during this update. */
 // ------------------------------------------------------------------------------------------------
+Coord3D ParticleSystem::getDriftWithWeather( void ) const
+{
+	Coord3D drift = m_driftVelocity;
+	// The Weather option's wind leans what rises and hangs in the air.  A flame's additive and a mark
+	// laid on the ground stay put, and so does an area effect, which shows where a hazard really is.
+	if (TheSnowManager != NULL && TheSnowManager->isWeatherOn() && m_shaderType == ParticleSystemInfo::ALPHA
+			&& !m_isGroundAligned && m_priority != AREA_EFFECT)
+	{
+		const Coord3D &wind = TheSnowManager->getWeatherWind();
+		drift.x += wind.x;
+		drift.y += wind.y;
+	}
+	return drift;
+}
+
 void ParticleSystem::makeUpdateContext( ParticleUpdateContext *context ) const
 {
-	context->driftVelocity = m_driftVelocity;
+	context->driftVelocity = getDriftWithWeather();
 	context->gravity = m_gravity;
 	context->clientFrame = TheGameClient->getFrame();
 	context->shaderType = m_shaderType;
@@ -2839,6 +2855,7 @@ void ParticleSystem::addGpuSamplesToShadowBlob( ParticleShadowBlob *blob ) const
 {
 	const UnsignedInt now = ParticleSystemManager::getParticleFrame();
 	const UnsignedInt samples = getGpuSampleCount();
+	const Coord3D drift = getDriftWithWeather();
 	for (UnsignedInt i = 0; i < samples; ++i)
 	{
 		const GpuSpawnSample &sample = getGpuSample( i );
@@ -2848,8 +2865,8 @@ void ParticleSystem::addGpuSamplesToShadowBlob( ParticleShadowBlob *blob ) const
 			continue;
 
 		const Real travel = info.m_velDamping * particleDampedSum( info.m_velDamping, k );
-		const Real x = info.m_pos.x + k * m_driftVelocity.x + info.m_vel.x * travel;
-		const Real y = info.m_pos.y + k * m_driftVelocity.y + info.m_vel.y * travel;
+		const Real x = info.m_pos.x + k * drift.x + info.m_vel.x * travel;
+		const Real y = info.m_pos.y + k * drift.y + info.m_vel.y * travel;
 		const Real size = info.m_size + info.m_sizeRate * particleDampedSum( info.m_sizeRateDamping, k );
 
 		Real alpha = info.m_alphaKey[ 0 ].value;

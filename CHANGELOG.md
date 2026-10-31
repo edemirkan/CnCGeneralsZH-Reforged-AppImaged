@@ -8,6 +8,10 @@ found and fixed, EA's own, not port damage.**
 
 ---
 
+## Weather, if you want it
+
+- Weather, under Options, Effects, is a new setting, off by default until it has been played. A green map gets rain, and a desert map gets blowing sand over a still tan haze. A snowy map with no flakes of its own gets them. The trees lean and sway harder and smoke drifts downwind; a map that already rains or snows, Flooded Plains or Bitter Winter, keeps what EA gave it and takes only the wind. No part of the game reads any of this: what a unit sees and hits stays what the map says, so you and your opponent can have different weather in one match. A sandstorm over a battle of three armies and three superweapons takes the graphics card's frame from about 7.9 to 8.5 ms. Direct3D 11 only, and off under Classic Graphics.
+
 ## Fire keeps its colour
 
 - Internal HDR Tone Mapping, under Options, Effects, is a new setting, off by default until it has been played. The name is exact: the game's picture has held light past white for a long time, then squeezed nearly all of it into one white on the way out, so a Strategy Center going up was a blown patch with no shape. With this on that fireball stays orange and yellow, a night fire shows its flame tongue, and the white heart of a nuke shrinks, about 54,000 near-white pixels down to about 24,000 in the same shot. Team colours hold a little more colour, and ground lit by a blast leans more orange. Ground and walls away from a fire do not change. Your monitor still gets a normal image: an HDR screen gets no HDR signal, and no HDR screen has seen this. In a battle of three armies and three superweapons the graphics card's frame reads 7.95 ms on and 7.78 and 8.12 ms off, which is no cost anyone can measure. The Direct3D 9 picture and Classic Graphics keep the old look.

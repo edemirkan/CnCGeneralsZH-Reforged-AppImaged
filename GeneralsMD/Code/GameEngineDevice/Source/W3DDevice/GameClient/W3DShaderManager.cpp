@@ -67,6 +67,7 @@
 #include "W3DDevice/GameClient/W3DCustomScene.h"
 #include "W3DDevice/GameClient/W3DSmudge.h"
 #include "GameClient/View.h"
+#include "GameClient/Snow.h"
 #include "GameClient/CommandXlat.h"
 #include "GameClient/Display.h"
 #include "GameClient/Water.h"
@@ -399,14 +400,38 @@ static void pushShroudFrame(void)
 		Direct3D11_Set_Haze_Shroud(NULL, wholeRect);
 	}
 }
+
+// The Weather option's haze: the same still layer, over all the ground, in the kind's colour.
+static void pushWeatherHaze(void)
+{
+	float colour[3];
+	Real strength;
+	TheSnowManager->getWeatherHaze(colour, &strength);
+	const float up[3] = { 0.0f, 0.0f, 1.0f };
+	DX11Post_Set_Haze(colour, 1.0e5f, 1.0f, strength, PROTO_HAZE_REACH, -1.0e6f, up, 0.0f);
+}
 #endif
 
 void W3DShaderManager::pushProtoHaze(void)
 {
 #if defined(_WIN32)
-	if (TheGlobalData->m_mapLight && Direct3D11_Is_Active())
+	// The kind is NONE unless the option is on and Direct3D 11 presents.  Weather's haze takes the place
+	// of the Warm Light one while it lasts.  Either option goes off live, and the haze holds what it was
+	// last handed.
+	const Bool weatherHaze = TheSnowManager != NULL && TheSnowManager->getWeatherKind() != WEATHER_KIND_NONE
+		&& TheSnowManager->isVisible();
+	static Bool s_hazed = FALSE;
+	if (weatherHaze)
+		pushWeatherHaze();
+	else if (TheGlobalData->m_mapLight && Direct3D11_Is_Active())
 		pushProtoHazeFrame();
-	if ((TheGlobalData->m_mapLight || TheGlobalData->m_ambientOcclusion) && Direct3D11_Is_Active())
+	else if (s_hazed)
+	{
+		const float none[3] = { 0.0f, 0.0f, 0.0f };
+		DX11Post_Set_Haze(none, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, none, 0.0f);
+	}
+	s_hazed = weatherHaze || TheGlobalData->m_mapLight;
+	if ((TheGlobalData->m_mapLight || TheGlobalData->m_ambientOcclusion || weatherHaze) && Direct3D11_Is_Active())
 		pushShroudFrame();
 #endif
 }

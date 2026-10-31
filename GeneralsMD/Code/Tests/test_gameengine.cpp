@@ -20520,6 +20520,29 @@ TEST(save_older_than_60hz_loads_only_as_mission_save)
 #include "test_map_ini_rollback.inc"
 #include "test_hostile_map.inc"
 
+#include "GameClient/Snow.h"
+
+TEST(weather_kind_goes_by_the_map)
+{
+	CHECK_EQ( (Int)weatherKindForMap( TRUE, TRUE, 100, 100 ), (Int)WEATHER_KIND_NONE );
+	CHECK_EQ( (Int)weatherKindForMap( TRUE, FALSE, 0, 100 ), (Int)WEATHER_KIND_NONE );
+	CHECK_EQ( (Int)weatherKindForMap( FALSE, TRUE, 100, 100 ), (Int)WEATHER_KIND_SNOW );
+	CHECK_EQ( (Int)weatherKindForMap( FALSE, FALSE, 41, 100 ), (Int)WEATHER_KIND_SAND );
+	CHECK_EQ( (Int)weatherKindForMap( FALSE, FALSE, 40, 100 ), (Int)WEATHER_KIND_RAIN );
+	CHECK_EQ( (Int)weatherKindForMap( FALSE, FALSE, 0, 0 ), (Int)WEATHER_KIND_RAIN );
+}
+
+TEST(a_weather_drop_keeps_its_world_place_as_the_tile_follows_the_camera)
+{
+	CHECK_NEAR( weatherWrap( 100.0f, 0.0f, 1024.0f ), 100.0f, 0.001f );
+	CHECK_NEAR( weatherWrap( 1124.0f, 0.0f, 1024.0f ), 100.0f, 0.001f );
+	CHECK_NEAR( weatherWrap( -100.0f, 0.0f, 1024.0f ), 924.0f, 0.001f );
+	// a pan that leaves the drop inside the tile does not move it
+	CHECK_NEAR( weatherWrap( 700.0f, 300.0f, 1024.0f ), weatherWrap( 700.0f, 500.0f, 1024.0f ), 0.001f );
+	// one it leaves behind comes round a whole tile on
+	CHECK_NEAR( weatherWrap( 700.0f, 800.0f, 1024.0f ), 1724.0f, 0.001f );
+}
+
 #include "GameLogic/AI.h"
 
 /* An AI seat's personality rides on its slot entry as an optional sixth field.  The whole options
