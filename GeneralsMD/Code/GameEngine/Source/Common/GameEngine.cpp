@@ -3051,19 +3051,30 @@ void GameEngine::planLogicPass( LogicPassPlan &plan )
 /* LOGIC-THREAD.md phase 3, step 3b.  The pass that overlaps: the client update up to the draw, then
 	 here the message stream and the pacer, which a pass that does not overlap runs after the client
 	 update; then the draw's sync point, and the tick goes to the logic thread as the overlap window
-	 opens (LogicThread::OverlapWindow).  A network game keeps its own order, the network's update
-	 between the message stream and the tick, and stays serialised until phase 5.  So does a -video pass:
+	 opens (LogicThread::OverlapWindow).  A network game keeps its own order (phase 5), the network's
+	 update between the message stream and the pacer that asks it whether a frame is ready, and the
+	 catch-up ticks after the draw stay serialised with both in front of each.  A -video pass stays out:
 	 planned here, the pacer moved the -recordfps picture on in front of the draw, and the picture that
 	 should have opened the next frame was drawn on the old one, numbered as a picture already taken and
 	 dropped: one picture of every recorded frame, half of them at -recordfps 120.  A tick beside the
 	 draw would move the frame the picture is numbered by while it is drawn. */
 Bool GameEngine::planOverlappedTick( void )
 {
-	if (TheNetwork != NULL || !TheGameLogic->isInGame() || TheGameLogic->isInShellGame()
+	if (!TheGameLogic->isInGame() || TheGameLogic->isInShellGame()
 			|| TheGameLogic->isLoadingMap() || isVideoPass())
 		return FALSE;
+#ifdef DEBUG_CRC
+	// VERIFY_CRC's two CRCs stand round the client update, and a tick beside its draw would be inside them
+	if (g_verifyClientCRC)
+		return FALSE;
+#endif
 
 	TheMessageStream->propagateMessages();
+	// Alt-F4's instant quit clears the game from inside the message stream, the network with it
+	if (!TheGameLogic->isInGame())
+		return FALSE;
+	if (TheNetwork != NULL)
+		TheNetwork->UPDATE();
 	planLogicPass( s_passPlan );
 	s_passPlanned = TRUE;
 	s_frameBeforeOverlap = TheGameLogic->getFrame();
@@ -3144,11 +3155,18 @@ void GameEngine::update( void )
 					? (Int)( now % ( TheGlobalData->m_drawDelayJitterMS + 1 ) ) : 0;
 				sleepMilliseconds( TheGlobalData->m_drawDelayMS + jitter );
 			}
-			// planOverlappedTick ran it in front of the draw on a pass that may overlap
+			/* A network frame that comes due during a short draw waits for the next pass's sync point, a
+				 millisecond away, and runs beside the next render.  One that comes due during a long draw
+				 is asked for now: left to the next pass, this pass ran no frame at all, the rate this
+				 machine reports fell, and a seat drawing 130 ms took the room from 22 frames a second to 14. */
+			if (s_passPlanned && TheNetwork != NULL && !(s_passPlan.mayRun && s_passPlan.due)
+					&& Clock_Milliseconds() - s_planTimeMs > 1000u / TheNetwork->getFrameRate())
+				s_passPlanned = FALSE;
+			// planOverlappedTick ran these two in front of the draw on a pass that may overlap
 			if (!s_passPlanned)
 				TheMessageStream->propagateMessages();
 
-			if (TheNetwork != NULL)
+			if (TheNetwork != NULL && !s_passPlanned)
 			{
 				TheNetwork->UPDATE();
 			}

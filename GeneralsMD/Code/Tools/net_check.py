@@ -19,6 +19,7 @@ detector did not fire, which is the failure then). docs: the multiplayer referen
 
 import argparse
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -35,6 +36,7 @@ MATCH_START_TIMEOUT_SECONDS = 180.0
 PRESS_INTERVAL_SECONDS = 0.5
 PRESSES = ("KEY_A CTRL", "KEY_X", "KEY_S", "KEY_X")
 MISMATCH_LINE = "CRC Mismatch"
+CENSUS_LINES = ("HEADLESS LOGICTHREAD OVERLAP", "HEADLESS LOGICTHREAD CENSUS", "HEADLESS LOGICTHREAD WINDOW")
 LOGIC_FPS = 60  # LOGICFRAMES_PER_SECOND: frame numbers here and in the logs count these
 PROVE_FRAME = 10 * LOGIC_FPS
 PROVE_SPAWN = "spawn 0 AmericaVehicleHumvee 2 %s"
@@ -102,6 +104,20 @@ def count_mismatches(log_path: str) -> int:
         return sum(MISMATCH_LINE in line for line in log)
 
 
+def report_census(log_path: str) -> int:
+    """Print the thread's report, which a copy writes on "quit", and return how many of its counts are not 0."""
+    if not os.path.exists(log_path):
+        return 0
+    with open(log_path, "r", errors="replace") as log:
+        lines = [line.strip() for line in log if line.startswith(CENSUS_LINES)]
+    for line in lines:
+        print("  " + line)
+    if not lines:
+        print("  no thread report: the copy never took the quit")
+    return sum(count != "0" for line in lines if not line.startswith(CENSUS_LINES[0])
+               for count in re.findall(r"[|:] \w+ (\d+)", line))
+
+
 def play(arguments: argparse.Namespace, games: list) -> list:
     """Press keys until every copy passes the target frame; returns (first frame, frame, seconds) per copy."""
     start = [game.status()["frame"] for game in games]
@@ -157,17 +173,19 @@ def main() -> int:
                 process.kill()
 
     total = 0
+    reads = 0
     for slot, (first, last, seconds) in enumerate(results):
         log_path = os.path.join(RUN_DIRECTORY, "%s%d_DebugLogFile.txt" % (arguments.tag, slot))
         mismatches = count_mismatches(log_path)
         total += max(mismatches, 0)
         print("NET CHECK slot %d: frame %d, %.1f logic fps, %s mismatches, %s"
               % (slot, last, (last - first) / seconds, "no log" if mismatches < 0 else mismatches, log_path))
+        reads += report_census(log_path)
     if arguments.prove:
         print("NET CHECK: detector %s" % ("fired" if total else "DID NOT FIRE"))
         return 0 if total else 1
-    print("NET CHECK: %s" % ("agreed" if total == 0 else "DESYNC"))
-    return 0 if total == 0 else 1
+    print("NET CHECK: %s, %d census or window counts not 0" % ("agreed" if total == 0 else "DESYNC", reads))
+    return 0 if total == 0 and reads == 0 else 1
 
 
 if __name__ == "__main__":
