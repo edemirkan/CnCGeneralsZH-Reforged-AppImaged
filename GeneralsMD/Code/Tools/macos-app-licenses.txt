@@ -40,6 +40,7 @@ avformat              ffmpeg
 avutil                ffmpeg
 swresample            ffmpeg
 swscale               ffmpeg
+mbedtls               mbedtls
 SDL3                  sdl3
 sdl3_shadercross      shadercross
 freetype              freetype
@@ -54,5 +55,7 @@ gamespy               gamespy
 mbedtls               mbedtls
 
 # compiled into another library
+ zlib                # Compression/ZLib, inside libcompression
+ lzhl                # Compression/LZHCompress (LZH-Light, Sergey Ignatchenko), inside libcompression
 + zlib                # Compression/ZLib, inside libcompression
 + lzhl                # Compression/LZHCompress (LZH-Light, Sergey Ignatchenko), inside libcompression
