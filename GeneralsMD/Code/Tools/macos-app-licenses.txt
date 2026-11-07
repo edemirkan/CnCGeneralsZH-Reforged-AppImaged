@@ -20,6 +20,7 @@ glyphrasteriser       game
 installroot           game
 milesaudio            game
 milesaudiomanager     game
+onlineconnection      game
 posixd3d9             game
 posixdevice           game
 sdl3shadercompile     game
@@ -39,6 +40,7 @@ avformat              ffmpeg
 avutil                ffmpeg
 swresample            ffmpeg
 swscale               ffmpeg
+mbedtls               mbedtls
 SDL3                  sdl3
 sdl3_shadercross      shadercross
 freetype              freetype
@@ -52,5 +54,7 @@ miniaudio             miniaudio
 gamespy               gamespy
 
 # compiled into another library
+ zlib                # Compression/ZLib, inside libcompression
+ lzhl                # Compression/LZHCompress (LZH-Light, Sergey Ignatchenko), inside libcompression
 + zlib                # Compression/ZLib, inside libcompression
 + lzhl                # Compression/LZHCompress (LZH-Light, Sergey Ignatchenko), inside libcompression
