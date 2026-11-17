@@ -439,7 +439,9 @@ void W3DAssetManager::applySkin(RenderObjClass *robj, Int skin)
 		}
 		TextureClass *oldTex = material->Peek_Texture(i);
 		REF_PTR_RELEASE(material);	// the mesh keeps its own reference to oldTex
-		const char *sheet = oldTex ? oldTex->Get_Texture_Name() : NULL;
+		if (oldTex == NULL)
+			continue;
+		const char *sheet = oldTex->Get_Texture_Name();
 		if (sheet == NULL || strncasecmp(sheet, "ZHC", 3) == 0)
 			continue;
 		const char *skinSheet = TankSkin_replacementSheet(skin, sheet);
